@@ -15,3 +15,7 @@ Thumbs.db
 .env.*
 *.keystore
 *.jks
+
+# Builds Android assinados
+android/app/release/
+android/app/debug/

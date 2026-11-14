@@ -26,11 +26,24 @@ Abra http://localhost:5173.
 | `npm run preview` | Serve a versão de produção localmente |
 | `npm run simulate` | Simula centenas de partidas com bots e mostra ganho de moedas/min e o tempo para desbloquear a loja |
 
+## App Android (Google Play)
+
+O app Android é gerado com [Capacitor](https://capacitorjs.com) e fica em `android/`. Funciona 100% offline (fonte embutida, sem permissão de internet), com vibração, botão voltar e tela travada em retrato.
+
+```bash
+npm run android        # gera a web, sincroniza e abre no Android Studio
+npm run android:sync   # só sincroniza depois de mudar o código
+npm run icons          # recria ícone, tela de abertura e artes da loja
+```
+
+Passo a passo completo de publicação: [docs/PUBLICAR-PLAY-STORE.md](docs/PUBLICAR-PLAY-STORE.md). Política de privacidade: [docs/politica-de-privacidade.md](docs/politica-de-privacidade.md). Artes da loja em `store/`.
+
 ## Estrutura
 
 ```
 src/
   App.jsx                 estado do jogo, arrastar e soltar, pontuação
+  native.js               integração Android: vibração, botão voltar, barra de status
   components/             Board, PieceTray, FloatingMoney, ShopModal, GameOverModal, ParticleCanvas…
   audio/soundEngine.js    efeitos sonoros sintetizados e pacotes de som de encaixe
   game/
@@ -41,6 +54,11 @@ src/
     sounds.js             os pacotes de som da loja
     format.js             formatação de moedas e save assinado no localStorage
 scripts/simulate.mjs      simulador de balanceamento
+scripts/make-icons.mjs    gera ícone, tela de abertura e artes da loja a partir do logo
+assets/                   imagens-fonte do ícone e da abertura
+store/                    ícone 512 e imagem de destaque para a Play Store
+android/                  projeto Android (Capacitor)
+docs/                     guia de publicação e política de privacidade
 ```
 
 ## Balanceamento

@@ -9,6 +9,7 @@ import ParticleCanvas from './components/ParticleCanvas';
 import RollingCounter from './components/RollingCounter';
 import { PieceShape } from './components/Block';
 import { sound } from './audio/soundEngine';
+import { haptic, onAppPause, onBackButton, setSystemBarsForTheme } from './native';
 import {
   anyFit, canPlace, clearLines, emptyGrid, findFullLines, generateSet, isBoardEmpty, placePiece,
 } from './game/logic';
@@ -91,6 +92,7 @@ export default function App() {
 
   useEffect(() => {
     document.querySelector('meta[name="theme-color"]')?.setAttribute('content', theme.vars['--panel']);
+    setSystemBarsForTheme(Boolean(theme.light)); // ícones da barra de status legíveis no tema
   }, [theme]);
 
   // Ganchos de depuração apenas em desenvolvimento
@@ -152,6 +154,7 @@ export default function App() {
     }];
 
     sound.place(piece.cells.length);
+    haptic(lines >= 2 ? 'heavy' : lines ? 'medium' : 'light');
     sound.coin(piece.cells.length);
 
     if (lines) {
@@ -221,6 +224,7 @@ export default function App() {
         setBest((b) => Math.max(b, finalScore));
         setGameOver(true);
         sound.gameOver();
+        haptic('heavy');
       }, 750);
     }
   };
@@ -340,6 +344,28 @@ export default function App() {
     };
   }, [onUp]);
 
+  // Android: botão "voltar" fecha o que estiver aberto; sem nada aberto, minimiza o app
+  const uiRef = useRef({});
+  uiRef.current = { shopOpen, confirmRestart };
+  useEffect(() => onBackButton(() => {
+    if (dragData.current) {
+      onUp({ pointerId: dragData.current.id, type: 'pointercancel' });
+      return true;
+    }
+    if (uiRef.current.shopOpen) {
+      setShopOpen(false);
+      return true;
+    }
+    if (uiRef.current.confirmRestart) {
+      setConfirmRestart(false);
+      return true;
+    }
+    return false;
+  }), [onUp]);
+
+  // Android: app em segundo plano → silencia o áudio (volta no próximo toque)
+  useEffect(() => onAppPause(() => sound.suspend()), []);
+
   /* ---------------- Ações ---------------- */
   const restart = () => {
     // Cancela um "game over" agendado da partida anterior (senão a nova partida terminaria sozinha)
@@ -381,6 +407,7 @@ export default function App() {
     setThemeId(id);
     sound.unlock();
     sound.purchase();
+    haptic('medium');
     const cx = window.innerWidth / 2;
     const cy = window.innerHeight / 2;
     particlesRef.current?.burst(cx, cy, t.particles, 70, 1.6);
@@ -404,6 +431,7 @@ export default function App() {
     setSoundId(id);
     sound.unlock();
     sound.purchase();
+    haptic('medium');
     particlesRef.current?.burst(window.innerWidth / 2, window.innerHeight / 2, theme.particles, 50, 1.4);
   };
 
@@ -423,7 +451,7 @@ export default function App() {
       <div ref={shakeRef} className="mx-auto flex h-full w-full flex-col items-center">
         {/* Cabeçalho */}
         <header
-          className="flex items-center justify-between gap-2 pt-[max(12px,env(safe-area-inset-top))] pb-1"
+          className="safe-top flex items-center justify-between gap-2 pb-1"
           style={{ width: 'max(min(100% - 24px, 520px), var(--board))' }}
         >
           <div className="panel flex min-w-0 items-center gap-2.5 rounded-2xl py-2 pr-4 pl-3 shadow-lg shadow-black/20">
@@ -506,7 +534,7 @@ export default function App() {
           />
         </main>
 
-        <footer className="px-4 pb-[max(8px,env(safe-area-inset-bottom))] text-center text-[10.5px] opacity-70" style={{ color: 'var(--muted)' }}>
+        <footer className="safe-bottom px-4 text-center text-[10.5px] opacity-70" style={{ color: 'var(--muted)' }}>
           Jogo recreativo — moedas virtuais sem valor monetário.
         </footer>
       </div>

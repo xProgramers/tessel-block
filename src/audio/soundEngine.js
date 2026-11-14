@@ -128,6 +128,11 @@ const PLACE_SOUNDS = {
 export const sound = {
   unlock() { ac(); },
 
+  /** Pausa o áudio (app em segundo plano). O próximo toque chama unlock() e retoma. */
+  suspend() {
+    if (ctx && ctx.state === 'running') ctx.suspend().catch(() => {});
+  },
+
   setMuted(m) {
     muted = m;
     if (master) master.gain.setTargetAtTime(m ? 0 : 0.7, ctx.currentTime, 0.02);

@@ -29,6 +29,16 @@ body,
   --tcell: calc(var(--cell) * 0.48);
 }
 
+/* Áreas seguras (notch / barra de status / barra de gestos). No app Android o Capacitor
+   injeta --safe-area-inset-*; no navegador usamos env(). */
+.safe-top {
+  padding-top: max(12px, var(--safe-area-inset-top, env(safe-area-inset-top, 0px)));
+}
+
+.safe-bottom {
+  padding-bottom: max(8px, var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px)));
+}
+
 .panel {
   background: var(--panel);
   border: 1px solid var(--panel-border);

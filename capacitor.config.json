@@ -1,0 +1,25 @@
+{
+  "appId": "com.xprogramers.tesselblock",
+  "appName": "Tessel Block",
+  "webDir": "dist",
+  "android": {
+    "backgroundColor": "#0b1120",
+    "allowMixedContent": false,
+    "webContentsDebuggingEnabled": false
+  },
+  "plugins": {
+    "SplashScreen": {
+      "launchShowDuration": 900,
+      "launchAutoHide": true,
+      "launchFadeOutDuration": 250,
+      "backgroundColor": "#0b1120",
+      "showSpinner": false,
+      "androidScaleType": "CENTER_CROP"
+    },
+    "SystemBars": {
+      "insetsHandling": "css",
+      "initialViewportFitValueHint": "cover",
+      "style": "DARK"
+    }
+  }
+}

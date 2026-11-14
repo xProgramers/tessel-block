@@ -35,6 +35,7 @@ export const THEMES = [
     price: 750,
     mult: 1.1,
     block: 'jelly',
+    light: true, // fundo claro: barra de status com ícones escuros
     palette: ['#ff6fa8', '#ffb35c', '#ffd84a', '#5fd38d', '#58c7f5', '#9b8cff', '#ff8fd8'],
     particles: ['#ff6fa8', '#ffd84a', '#5fd38d', '#58c7f5', '#ffffff', '#c4b5fd'],
     vars: {
