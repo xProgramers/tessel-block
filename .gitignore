@@ -1,0 +1,17 @@
+# Dependências e build
+node_modules/
+dist/
+
+# Ferramentas locais
+.claude/
+.vscode/
+.idea/
+*.log
+.DS_Store
+Thumbs.db
+
+# Variáveis de ambiente / segredos (nunca versionar)
+.env
+.env.*
+*.keystore
+*.jks
