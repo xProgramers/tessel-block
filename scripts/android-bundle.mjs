@@ -11,12 +11,15 @@ const isWin = process.platform === 'win32';
 function run(cmd, args, opts = {}) {
   console.log(`\n> ${cmd} ${args.join(' ')}`);
   const r = spawnSync(cmd, args, { stdio: 'inherit', shell: isWin, ...opts });
+  if (r.error) console.error(r.error.message);
   if (r.status !== 0) process.exit(r.status ?? 1);
 }
 
 run('npx', ['vite', 'build']);
 run('npx', ['cap', 'sync', 'android']);
-run(isWin ? 'gradlew.bat' : './gradlew', ['bundleRelease'], { cwd: 'android' });
+// "sh gradlew" funciona mesmo se o arquivo perdeu a permissão de execução
+if (isWin) run('gradlew.bat', ['bundleRelease'], { cwd: 'android' });
+else run('sh', ['gradlew', 'bundleRelease'], { cwd: 'android' });
 
 const aab = join('android', 'app', 'build', 'outputs', 'bundle', 'release', 'app-release.aab');
 const signed = existsSync(join('android', 'keystore.properties')) || Boolean(process.env.TB_KEYSTORE_FILE);
