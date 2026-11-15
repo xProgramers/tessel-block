@@ -41,4 +41,4 @@ Se esta política mudar, a nova versão será publicada neste mesmo endereço, c
 
 ## Contato
 
-Dúvidas sobre esta política: **[SEU E-MAIL DE CONTATO]**
+Dúvidas sobre esta política: **mpotal@hotmail.com**

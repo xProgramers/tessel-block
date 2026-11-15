@@ -53,7 +53,7 @@ A cada nova versão, aumente em `android/app/build.gradle`:
 1. Crie a conta de desenvolvedor em <https://play.google.com/console> (taxa única de US$ 25 e verificação de identidade).
 2. **Criar app** → nome "Tessel Block", idioma Português (Brasil), tipo **Jogo**, **Gratuito**.
 3. Preencha **Configurar seu app** (painel inicial):
-   - **Política de privacidade:** URL pública de `docs/politica-de-privacidade.md` (o link do arquivo no GitHub serve, desde que o repositório seja público — ou publique no GitHub Pages). Troque `[SEU E-MAIL DE CONTATO]` antes.
+   - **Política de privacidade:** URL pública de `docs/politica-de-privacidade.md` (o link do arquivo no GitHub serve, desde que o repositório seja público — ou publique no GitHub Pages).
    - **Acesso ao app:** todas as funções disponíveis sem restrições.
    - **Anúncios:** não contém anúncios.
    - **Classificação do conteúdo:** questionário — jogo de quebra-cabeça, sem violência, sem apostas com dinheiro real. As moedas são virtuais, sem compra e sem troca por prêmios.
