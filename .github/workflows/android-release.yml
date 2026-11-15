@@ -1,0 +1,68 @@
+name: Android bundle
+
+# Gera o .aab da Play Store num computador do GitHub.
+# - Em PRs que mexem no Android: só confere se o build funciona (sem assinatura).
+# - "Run workflow" (manual) ou tag v*: gera o .aab ASSINADO, se os segredos
+#   TB_KEYSTORE_BASE64, TB_KEYSTORE_PASSWORD, TB_KEY_ALIAS e TB_KEY_PASSWORD existirem.
+#   O arquivo fica em Actions → (execução) → Artifacts.
+on:
+  workflow_dispatch:
+  push:
+    tags: ['v*']
+  pull_request:
+    paths:
+      - 'android/**'
+      - 'capacitor.config.json'
+      - 'package.json'
+      - 'scripts/android-bundle.mjs'
+      - '.github/workflows/android-release.yml'
+
+jobs:
+  bundle:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+      - run: npm ci
+      - run: npm test
+
+      - name: Preparar chave de upload
+        if: github.event_name != 'pull_request'
+        env:
+          TB_KEYSTORE_BASE64: ${{ secrets.TB_KEYSTORE_BASE64 }}
+        run: |
+          if [ -n "$TB_KEYSTORE_BASE64" ]; then
+            echo "$TB_KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/upload.jks"
+            echo "TB_KEYSTORE_FILE=$RUNNER_TEMP/upload.jks" >> "$GITHUB_ENV"
+            echo "Chave de upload encontrada: o bundle sai assinado."
+          else
+            echo "::warning::Segredo TB_KEYSTORE_BASE64 não configurado: o bundle sai SEM assinatura."
+          fi
+
+      - name: Gerar .aab
+        env:
+          TB_KEYSTORE_PASSWORD: ${{ secrets.TB_KEYSTORE_PASSWORD }}
+          TB_KEY_ALIAS: ${{ secrets.TB_KEY_ALIAS }}
+          TB_KEY_PASSWORD: ${{ secrets.TB_KEY_PASSWORD }}
+        run: npm run android:bundle
+
+      - name: Conferir assinatura
+        if: env.TB_KEYSTORE_FILE != ''
+        run: jarsigner -verify android/app/build/outputs/bundle/release/app-release.aab | tail -1
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: tessel-block-aab
+          path: android/app/build/outputs/bundle/release/app-release.aab
+          if-no-files-found: error
+
+      - name: Apagar chave
+        if: always()
+        run: rm -f "$RUNNER_TEMP/upload.jks"

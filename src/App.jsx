@@ -147,7 +147,7 @@ export default function App() {
 
   // Ganchos de depuração apenas em desenvolvimento
   useEffect(() => {
-    if (import.meta.env.DEV) window.__game = { setGrid, setBalance, setPieces, setThemeId, setOwned, setLevelPoints, setAdvStars };
+    if (import.meta.env.DEV) window.__game = { setGrid, setBalance, setPieces, setThemeId, setOwned, setLevelPoints, setAdvStars, setScore, setBest, setStreak };
   }, []);
 
   const fits = useMemo(() => pieces.map((p) => (p ? anyFit(grid, p) : false)), [grid, pieces]);
@@ -668,6 +668,7 @@ export default function App() {
             </button>
             <button
               onClick={() => { sound.unlock(); setShopOpen(true); }}
+              aria-label="Loja"
               className="panel flex h-11 items-center gap-1.5 rounded-xl px-3 text-sm font-bold transition hover:brightness-125 active:scale-95"
             >
               <Store size={18} style={{ color: 'var(--accent)' }} />

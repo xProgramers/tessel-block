@@ -1,95 +1,130 @@
 # Publicar o Tessel Block na Google Play
 
-Guia passo a passo, do código até a loja. O projeto Android já está pronto na pasta `android/` (gerado com Capacitor).
+Guia passo a passo, do código até a loja. O projeto Android já está pronto na pasta `android/` (Capacitor 8, `targetSdk 36`, ícone adaptativo, tela de abertura, retrato, offline).
 
-## 0. Antes de tudo: o ID do app
+Arquivos de apoio:
 
-O ID do pacote é **`com.xprogramers.tesselblock`**. Ele é **permanente**: depois do primeiro envio à Play Store não dá para mudar. Se quiser outro, troque agora em dois lugares e rode `npm run android:sync`:
+- Textos e imagens da página da loja: [`store/LISTING.md`](../store/LISTING.md)
+- Respostas dos formulários do Play Console: [`docs/play-console-respostas.md`](play-console-respostas.md)
+- Política de privacidade: [`docs/politica-de-privacidade.md`](politica-de-privacidade.md)
 
-- `capacitor.config.json` → `appId`
-- `android/app/build.gradle` → `namespace` e `applicationId`
+## 0. ID e versão do app
 
-## 1. Instalar o Android Studio
+- **ID do pacote:** `com.xprogramers.tesselblock`. É **permanente**: depois do primeiro envio à Play Store não dá para mudar.
+- **Versão:** em `android/app/build.gradle`. A cada envio novo, aumente:
+  - `versionCode` (inteiro, sempre +1: 1, 2, 3…). O Play Console recusa um número repetido.
+  - `versionName` (o que o jogador vê: "1.0.0", "1.0.1", "1.1.0"…)
 
-Baixe em <https://developer.android.com/studio> e instale com as opções padrão (ele já inclui o Java e o Android SDK). Na primeira abertura, deixe o assistente baixar os componentes.
+## 1. Criar a chave de upload (uma vez só)
 
-## 2. Abrir o projeto
+A Play Store exige que o `.aab` seja assinado. Você cria uma **chave de upload** no seu computador; o Google guarda a chave definitiva do app (Play App Signing).
 
-Na pasta do projeto:
+O `keytool` vem junto com o Android Studio. No **Windows (PowerShell)**:
+
+```powershell
+mkdir "$env:USERPROFILE\Documents\chaves" -Force
+& "C:\Program Files\Android\Android Studio\jbr\bin\keytool.exe" -genkeypair -v `
+  -keystore "$env:USERPROFILE\Documents\chaves\tessel-block-upload.jks" `
+  -alias upload -keyalg RSA -keysize 2048 -validity 10000
+```
+
+No **macOS/Linux**:
+
+```bash
+mkdir -p ~/chaves
+keytool -genkeypair -v -keystore ~/chaves/tessel-block-upload.jks \
+  -alias upload -keyalg RSA -keysize 2048 -validity 10000
+```
+
+Ele pede uma senha (mínimo 6 caracteres) e algumas informações (nome, cidade, país `BR`). Ao final confirme com `sim`/`yes`.
+
+> ⚠️ **Guarde o arquivo `.jks` e a senha em local seguro, com backup** (ex.: um pendrive e um gerenciador de senhas). Se perder, dá para pedir ao Google para trocar a chave de upload, mas leva alguns dias. **Nunca coloque a chave no GitHub** — o `.gitignore` já bloqueia `*.jks` e `android/keystore.properties`.
+
+## 2. Dizer ao projeto onde está a chave
+
+Copie `android/keystore.properties.example` para `android/keystore.properties` e preencha:
+
+```properties
+storeFile=C:/Users/SEU_USUARIO/Documents/chaves/tessel-block-upload.jks
+storePassword=SUA_SENHA
+keyAlias=upload
+keyPassword=SUA_SENHA
+```
+
+Use barras normais (`/`) no caminho, mesmo no Windows. Se o keytool não perguntou uma senha separada para a chave, `keyPassword` é a mesma senha.
+
+## 3. Gerar o .aab assinado
+
+### Opção A — no seu computador
+
+Precisa do [Android Studio](https://developer.android.com/studio) instalado (ele traz o Java e o Android SDK). Abra o projeto uma vez com `npm run android` e espere o "Gradle sync" terminar — isso cria o `android/local.properties` com o caminho do SDK.
+
+Depois, sempre que quiser gerar uma versão:
 
 ```bash
 npm install
-npm run android
+npm run android:bundle
 ```
 
-Isso gera a versão web, copia para o projeto Android e abre o Android Studio. Espere o "Gradle sync" terminar (barra inferior).
+No Windows, se aparecer erro de `JAVA_HOME`, rode antes no PowerShell:
 
-Sempre que mudar o código do jogo, rode `npm run android:sync` antes de gerar uma nova versão.
+```powershell
+$env:JAVA_HOME = "C:\Program Files\Android\Android Studio\jbr"
+```
 
-## 3. Testar no celular
+O arquivo sai em **`android/app/build/outputs/bundle/release/app-release.aab`**. O script avisa no final se o bundle saiu assinado.
 
-1. No celular: **Configurações → Sobre o telefone →** toque 7 vezes em **Número da versão** para liberar as Opções do desenvolvedor. Depois ative **Depuração USB**.
-2. Conecte o celular no computador e aceite o aviso no celular.
-3. No Android Studio, escolha o celular no topo e clique em ▶ **Run**.
+(Também dá pelo menu do Android Studio: **Build → Generate Signed App Bundle or APK… → Android App Bundle**, escolhendo a mesma keystore.)
 
-Confira: vibração ao encaixar, botão voltar fechando a loja, barra de status legível em todos os temas, som e progresso salvo depois de fechar e abrir o app.
+### Opção B — pelo GitHub, sem Android Studio
 
-## 4. Gerar o arquivo para a loja (.aab assinado)
+O workflow **Android bundle** (`.github/workflows/android-release.yml`) gera o `.aab` num computador do GitHub.
 
-1. **Build → Generate Signed App Bundle or APK… → Android App Bundle**.
-2. Em *Key store path*, clique em **Create new…** e crie a chave de upload:
-   - salve o arquivo `.jks` **fora** da pasta do projeto (ex.: `Documentos/chaves/tessel-block-upload.jks`);
-   - anote a senha da keystore, o *alias* e a senha da chave.
-3. Escolha **release** e finalize. O arquivo sai em `android/app/release/app-release.aab`.
+1. Converta a chave para texto (base64):
+   - Windows (PowerShell): `[Convert]::ToBase64String([IO.File]::ReadAllBytes("$env:USERPROFILE\Documents\chaves\tessel-block-upload.jks")) | Set-Clipboard`
+   - macOS: `base64 -i ~/chaves/tessel-block-upload.jks | pbcopy`
+2. No GitHub: **Settings → Secrets and variables → Actions → New repository secret**, crie:
+   - `TB_KEYSTORE_BASE64` — o texto copiado acima
+   - `TB_KEYSTORE_PASSWORD` — senha da keystore
+   - `TB_KEY_ALIAS` — `upload`
+   - `TB_KEY_PASSWORD` — senha da chave
+3. **Actions → Android bundle → Run workflow**. Quando terminar, baixe `tessel-block-aab` em **Artifacts** (vem num .zip; o `.aab` está dentro).
 
-> ⚠️ **Guarde a keystore e as senhas em local seguro (e com backup).** Sem elas você não consegue enviar atualizações. Nunca coloque a keystore no GitHub — o `.gitignore` já bloqueia `*.jks` e `*.keystore`.
+Os segredos ficam criptografados no GitHub e não aparecem nos logs.
 
-A cada nova versão, aumente em `android/app/build.gradle`:
-- `versionCode` (inteiro, sempre +1: 1, 2, 3…)
-- `versionName` (o que o jogador vê: "1.0.1", "1.1.0"…)
+## 4. Testar no celular (recomendado antes de enviar)
 
-## 5. Google Play Console
+1. No celular: **Configurações → Sobre o telefone →** toque 7 vezes em **Número da versão** e ative **Depuração USB** nas Opções do desenvolvedor.
+2. Conecte no computador, aceite o aviso e, no Android Studio, clique em ▶ **Run**.
 
-1. Crie a conta de desenvolvedor em <https://play.google.com/console> (taxa única de US$ 25 e verificação de identidade).
-2. **Criar app** → nome "Tessel Block", idioma Português (Brasil), tipo **Jogo**, **Gratuito**.
-3. Preencha **Configurar seu app** (painel inicial):
-   - **Política de privacidade:** URL pública de `docs/politica-de-privacidade.md` (o link do arquivo no GitHub serve, desde que o repositório seja público — ou publique no GitHub Pages).
-   - **Acesso ao app:** todas as funções disponíveis sem restrições.
-   - **Anúncios:** não contém anúncios.
-   - **Classificação do conteúdo:** questionário — jogo de quebra-cabeça, sem violência, sem apostas com dinheiro real. As moedas são virtuais, sem compra e sem troca por prêmios.
-   - **Público-alvo:** escolha as faixas etárias (se incluir menores de 13, o app passa por regras da política "Famílias").
-   - **Segurança dos dados:** o app **não coleta nem compartilha dados**.
-   - **Categoria:** Jogos → Quebra-cabeça.
-4. **Página da loja (Presença na loja → Página principal):**
-   - Ícone 512×512: `store/play-icon-512.png`
-   - Imagem de destaque 1024×500: `store/feature-graphic-1024x500.png`
-   - Capturas de tela do celular: mínimo 2 (recomendado 4–8), tiradas no próprio aparelho — mostre o tabuleiro, um combo, a loja de temas e a loja de sons.
-   - Descrição curta (até 80 caracteres) e descrição completa — sugestões abaixo.
+Confira: vibração ao encaixar, botão voltar, barra de status legível em todos os temas, som, modo Aventura e progresso salvo depois de fechar e abrir o app.
 
-## 6. Teste fechado (obrigatório para contas pessoais novas)
+## 5. Publicar a política de privacidade (GitHub Pages)
 
-Contas de desenvolvedor pessoais criadas recentemente precisam rodar um **teste fechado** com um número mínimo de testadores por um período mínimo antes de liberar a produção (a regra vigente quando este guia foi escrito era 12 testadores por 14 dias — confira o número atual no Play Console).
+O Play Console exige uma URL pública. A pasta `docs/` já está pronta para o GitHub Pages:
 
-1. **Testar → Teste fechado → Criar faixa**, envie o `.aab`.
-2. Adicione os e-mails dos testadores (lista de e-mails ou Grupo do Google) e compartilhe o link de participação.
-3. Os testadores precisam aceitar o convite e manter o app instalado durante o período.
-4. Depois disso, peça acesso à **Produção** no painel e envie a versão.
+1. No GitHub: **Settings → Pages**.
+2. Em *Build and deployment*: **Source = Deploy from a branch**, **Branch = `main`**, pasta **`/docs`** → **Save**.
+3. Em 1–2 minutos a política fica em: **https://xprogramers.github.io/tessel-block/politica-de-privacidade.html**
 
-## 7. Sugestões de texto para a loja
+## 6. Google Play Console
 
-**Descrição curta:**
-> Encaixe peças, limpe linhas, faça combos e desbloqueie temas incríveis!
+1. **Criar app** → nome "Tessel Block", idioma padrão **Português (Brasil)**, tipo **Jogo**, **Gratuito**, aceite as declarações.
+2. **Painel → Configurar seu app**: preencha cada item com as respostas de [`docs/play-console-respostas.md`](play-console-respostas.md) (política de privacidade, acesso ao app, anúncios, classificação do conteúdo, público-alvo, segurança dos dados, ID de publicidade, apps governamentais, recursos financeiros, saúde, categoria e contato).
+3. **Presença na loja → Página principal da loja**: textos, ícone, imagem de destaque e capturas de [`store/LISTING.md`](../store/LISTING.md).
 
-**Descrição completa:**
-> Tessel Block é um quebra-cabeça de blocos relaxante e viciante. Arraste as peças para o tabuleiro 8×8, complete linhas e colunas e veja tudo explodir em partículas e moedas de ouro!
->
-> ✦ Combos e sequências multiplicam suas moedas
-> ✦ 10 temas para o tabuleiro e as peças: Doces & Gelatina, Madeira Zen, Cyber Neon, Arcade Pixel, Aurora Glacial, Magma, Ouro & Mármore, Galáxia e Esmeralda VIP
-> ✦ Sons de encaixe para escolher: Madeira, Bolha, Cristal…
-> ✦ Efeitos, vibração e sons caprichados
-> ✦ Funciona 100% offline, sem anúncios e sem coleta de dados
->
-> As moedas de ouro são virtuais e servem só para desbloquear visuais no jogo — não têm valor em dinheiro.
+## 7. Teste fechado (obrigatório para contas pessoais novas)
+
+Contas de desenvolvedor **pessoais** criadas depois de novembro de 2023 só liberam a produção depois de um **teste fechado com pelo menos 12 testadores inscritos por 14 dias seguidos** (confira o número atual no Painel do Play Console — ele mostra a contagem e os dias). Contas de organização (empresa com CNPJ/D-U-N-S) não têm essa exigência.
+
+1. **Testar e lançar → Teste → Teste fechado → Criar faixa** (ou use a faixa "Alpha" que já vem criada).
+2. **Testadores:** crie uma lista de e-mails (contas Google — de preferência que usem Android) com pelo menos 12 pessoas; dá para pôr uns 15 para ter folga.
+3. **Criar nova versão:** na primeira vez, aceite o **Play App Signing** (o Google guarda a chave do app). Envie o `app-release.aab`, escreva as notas da versão e **Salvar → Revisar versão → Iniciar lançamento**.
+4. A primeira revisão do Google leva de algumas horas a alguns dias.
+5. Depois de aprovado, copie o **link de participação** do teste e mande para os testadores. Cada um precisa abrir o link, **aceitar o convite** e **instalar o app pela Play Store**, e manter instalado os 14 dias.
+6. Atualizações durante o teste são bem-vindas (contam como "uso ativo"): aumente o `versionCode` e envie um `.aab` novo na mesma faixa.
+7. Passados os 14 dias com 12+ testadores, aparece **Solicitar acesso à produção** no Painel. Responda o questionário (modelos em `docs/play-console-respostas.md`) — a análise leva até ~7 dias.
+8. Com o acesso liberado: **Produção → Criar nova versão**, envie o `.aab` (ou promova a versão do teste) e **Iniciar lançamento**.
 
 ## Resumo dos comandos
 
@@ -97,4 +132,5 @@ Contas de desenvolvedor pessoais criadas recentemente precisam rodar um **teste 
 |---|---|
 | `npm run android` | Gera a web, sincroniza e abre o Android Studio |
 | `npm run android:sync` | Gera a web e sincroniza com o projeto Android |
+| `npm run android:bundle` | Gera o `.aab` de release (assinado, se `android/keystore.properties` existir) |
 | `npm run icons` | Recria ícone, tela de abertura e artes da loja a partir do logo |
