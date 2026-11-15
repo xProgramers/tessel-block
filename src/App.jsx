@@ -1,16 +1,19 @@
 import { flushSync } from 'react-dom';
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { Coins, Flame, RotateCcw, Store, Volume2, VolumeX } from 'lucide-react';
+import { Coins, Flame, Map as MapIcon, RotateCcw, Star, Store, Volume2, VolumeX, Zap } from 'lucide-react';
 import Board from './components/Board';
 import PieceTray from './components/PieceTray';
 import FloatingMoney from './components/FloatingMoney';
 import ShopModal from './components/ShopModal';
 import GameOverModal from './components/GameOverModal';
+import AdventureMap from './components/AdventureMap';
+import LevelResultModal from './components/LevelResultModal';
 import ParticleCanvas from './components/ParticleCanvas';
 import RollingCounter from './components/RollingCounter';
 import { PieceShape } from './components/Block';
 import { createHoverStore, dragPoint } from './game/drag';
 import { praiseFor } from './game/praise';
+import { LEVEL_COUNT, levelBoard, levelConfig, levelReward, starsFor } from './game/adventure';
 import { sound } from './audio/soundEngine';
 import { haptic, onAppPause, onBackButton, setSystemBarsForTheme } from './native';
 import {
@@ -56,6 +59,15 @@ export default function App() {
   const [floats, setFloats] = useState([]);
   const [clearFx, setClearFx] = useState([]);
   const [lastStamp, setLastStamp] = useState(0);
+  // Modo Aventura
+  const [advStars, setAdvStars] = useState(initial.data.adv); // estrelas por nível (0 = não vencido)
+  const [level, setLevel] = useState(null); // nível em jogo (null = modo Clássico)
+  const [levelPoints, setLevelPoints] = useState(0);
+  const [levelMoves, setLevelMoves] = useState(0);
+  const [levelResult, setLevelResult] = useState(null);
+  const [mapOpen, setMapOpen] = useState(false);
+  const classicStash = useRef(null); // partida clássica guardada enquanto joga a Aventura
+  const levelDone = useRef(false); // nível já decidido (bloqueia jogadas até o resultado)
 
   const theme = getTheme(themeId);
 
@@ -69,20 +81,25 @@ export default function App() {
 
   // Estado mais recente para handlers de ponteiro (evita closures obsoletas)
   const state = useRef({});
-  state.current = { grid, pieces, streak, missCount, theme, score, best, gameOver, balance, owned, ownedSounds };
+  state.current = {
+    grid, pieces, streak, missCount, theme, score, best, gameOver, balance, owned, ownedSounds,
+    level, levelPoints, levelMoves, advStars,
+  };
 
   // Progresso salvo num registro assinado único (ver format.js)
   useEffect(() => {
-    writeSave({ balance, owned, theme: themeId, best, sounds: ownedSounds, sound: soundId });
-  }, [balance, owned, themeId, best, ownedSounds, soundId]);
+    writeSave({ balance, owned, theme: themeId, best, sounds: ownedSounds, sound: soundId, adv: advStars });
+  }, [balance, owned, themeId, best, ownedSounds, soundId, advStars]);
 
   useEffect(() => sound.setPlacePack(soundId), [soundId]);
 
-  // Partida em andamento: salva a cada jogada; terminada, apaga (a próxima abertura começa do zero)
+  // Partida em andamento: salva a cada jogada; terminada, apaga (a próxima abertura começa do zero).
+  // Durante um nível da Aventura a partida clássica salva fica intacta.
   useEffect(() => {
+    if (level) return;
     if (gameOver) clearGame();
     else saveGame({ grid, pieces, score, streak, missCount });
-  }, [grid, pieces, score, streak, missCount, gameOver]);
+  }, [grid, pieces, score, streak, missCount, gameOver, level]);
 
   // Partida restaurada sem jogada possível (o app fechou durante o "game over"): encerra agora
   useEffect(() => {
@@ -108,6 +125,7 @@ export default function App() {
       setBest(data.best);
       setOwnedSounds((o) => (o.join() === data.sounds.join() ? o : data.sounds));
       setSoundId(data.sound);
+      setAdvStars((a) => (a.join() === data.adv.join() ? a : data.adv));
     };
     window.addEventListener('storage', onStorage);
     return () => window.removeEventListener('storage', onStorage);
@@ -125,7 +143,7 @@ export default function App() {
 
   // Ganchos de depuração apenas em desenvolvimento
   useEffect(() => {
-    if (import.meta.env.DEV) window.__game = { setGrid, setBalance, setPieces, setThemeId, setOwned };
+    if (import.meta.env.DEV) window.__game = { setGrid, setBalance, setPieces, setThemeId, setOwned, setLevelPoints, setAdvStars };
   }, []);
 
   const fits = useMemo(() => pieces.map((p) => (p ? anyFit(grid, p) : false)), [grid, pieces]);
@@ -149,7 +167,7 @@ export default function App() {
 
   /* ---------------- Encaixe e pontuação ---------------- */
   const place = (index, row, col) => {
-    const { grid, pieces, streak, missCount, theme, score, best } = state.current;
+    const { grid, pieces, streak, missCount, theme, score, best, level, levelPoints, levelMoves } = state.current;
     const piece = pieces[index];
     if (!piece || !canPlace(grid, piece, row, col)) return;
 
@@ -253,10 +271,30 @@ export default function App() {
     setMissCount(newMiss);
     setLastStamp(stamp);
     setBalance((b) => b + gain);
-    setScore((s) => s + gain);
     setSessionTotal((s) => s + gain);
     addFloats(fl);
 
+    if (level) {
+      // Aventura: pontos sem o multiplicador do tema (todo mundo enfrenta a mesma meta)
+      const pts = computeGain({ blocks: piece.cells.length, lines, streak: newStreak, allClear, mult: 1 }).total;
+      const points = levelPoints + pts;
+      const moves = levelMoves + 1;
+      setLevelPoints(points);
+      setLevelMoves(moves);
+      if (points >= levelConfig(level).target) return winLevel(level, moves, points);
+      if (!next.some((p) => p && anyFit(g, p))) {
+        levelDone.current = true;
+        clearTimeout(gameOverTimer.current);
+        gameOverTimer.current = setTimeout(() => {
+          setLevelResult({ n: level, won: false, stars: 0, points, target: levelConfig(level).target, reward: 0 });
+          sound.gameOver();
+          haptic('heavy');
+        }, 750);
+      }
+      return;
+    }
+
+    setScore((s) => s + gain);
     if (!next.some((p) => p && anyFit(g, p))) {
       const finalScore = score + gain;
       clearTimeout(gameOverTimer.current);
@@ -269,6 +307,33 @@ export default function App() {
       }, 750);
     }
   };
+  /** Venceu o nível: estrelas, prêmio em moedas e a tela de resultado. */
+  const winLevel = (n, moves, points) => {
+    levelDone.current = true;
+    const prev = state.current.advStars[n - 1] || 0;
+    const stars = starsFor(n, moves);
+    const reward = levelReward(n, prev, stars);
+    if (stars > prev) {
+      setAdvStars((a) => {
+        const next = a.slice();
+        while (next.length < n) next.push(0);
+        next[n - 1] = Math.max(next[n - 1] || 0, stars);
+        return next;
+      });
+    }
+    if (reward) {
+      setBalance((b) => b + reward);
+      setSessionTotal((s) => s + reward);
+    }
+    clearTimeout(gameOverTimer.current);
+    gameOverTimer.current = setTimeout(() => {
+      setLevelResult({ n, won: true, stars, points, target: levelConfig(n).target, reward, last: n === LEVEL_COUNT });
+      sound.levelWin(stars);
+      haptic('heavy');
+      particlesRef.current?.burst(window.innerWidth / 2, window.innerHeight * 0.4, theme.particles, 70, 1.5);
+    }, 650);
+  };
+
   const placeRef = useRef(place);
   placeRef.current = place;
 
@@ -340,7 +405,7 @@ export default function App() {
 
   const onPointerDown = useCallback((index, e) => {
     const s = state.current;
-    if (dragData.current || s.gameOver) return;
+    if (dragData.current || s.gameOver || levelDone.current) return;
     const piece = s.pieces[index];
     if (!piece) return;
     e.preventDefault();
@@ -389,7 +454,7 @@ export default function App() {
 
   // Android: botão "voltar" fecha o que estiver aberto; sem nada aberto, minimiza o app
   const uiRef = useRef({});
-  uiRef.current = { shopOpen, confirmRestart };
+  uiRef.current = { shopOpen, confirmRestart, mapOpen };
   useEffect(() => onBackButton(() => {
     if (dragData.current) {
       onUp({ pointerId: dragData.current.id, type: 'pointercancel' });
@@ -397,6 +462,10 @@ export default function App() {
     }
     if (uiRef.current.shopOpen) {
       setShopOpen(false);
+      return true;
+    }
+    if (uiRef.current.mapOpen) {
+      setMapOpen(false);
       return true;
     }
     if (uiRef.current.confirmRestart) {
@@ -429,9 +498,74 @@ export default function App() {
     sound.newSet();
   };
 
+  /* ---------------- Modo Aventura ---------------- */
+  const startLevel = (n) => {
+    clearTimeout(gameOverTimer.current);
+    if (dragData.current) onUp({ pointerId: dragData.current.id, type: 'pointercancel' });
+    const s = state.current;
+    // Sai do Clássico: guarda a partida para voltar exatamente nela
+    if (!s.level) {
+      classicStash.current = {
+        grid: s.grid, pieces: s.pieces, score: s.score, streak: s.streak, missCount: s.missCount, gameOver: s.gameOver,
+      };
+    }
+    const g = levelBoard(n);
+    levelDone.current = false;
+    setLevel(n);
+    setGrid(g);
+    setPieces(generateSet(g));
+    setStreak(0);
+    setMissCount(0);
+    setLevelPoints(0);
+    setLevelMoves(0);
+    setLevelResult(null);
+    setGameOver(false);
+    setConfirmRestart(false);
+    setClearFx([]);
+    setMapOpen(false);
+    sound.unlock();
+    sound.newSet();
+  };
+
+  const exitToClassic = () => {
+    clearTimeout(gameOverTimer.current);
+    if (dragData.current) onUp({ pointerId: dragData.current.id, type: 'pointercancel' });
+    const c = classicStash.current;
+    classicStash.current = null;
+    levelDone.current = false;
+    setLevel(null);
+    setLevelResult(null);
+    setConfirmRestart(false);
+    setClearFx([]);
+    if (c) {
+      setGrid(c.grid);
+      setPieces(c.pieces);
+      setScore(c.score);
+      setStreak(c.streak);
+      setMissCount(c.missCount);
+      setGameOver(c.gameOver);
+    } else {
+      const g = emptyGrid();
+      setGrid(g);
+      setPieces(generateSet(g));
+      setScore(0);
+      setStreak(0);
+      setMissCount(0);
+      setGameOver(false);
+    }
+  };
+
+  const openMap = () => {
+    sound.unlock();
+    if (levelResult) exitToClassic();
+    setMapOpen(true);
+  };
+
   // Botão de reiniciar no meio da partida pede confirmação (toque duplo)
   const askRestart = () => {
-    if (confirmRestart || gameOver || state.current.score === 0) return restart();
+    const again = level ? () => startLevel(level) : restart;
+    const fresh = level ? levelMoves === 0 || levelDone.current : state.current.score === 0;
+    if (confirmRestart || gameOver || fresh) return again();
     setConfirmRestart(true);
   };
   useEffect(() => {
@@ -528,12 +662,60 @@ export default function App() {
 
         {/* Área de jogo */}
         <main className="flex min-h-0 flex-1 flex-col items-center justify-center gap-2.5">
-          <div className="flex items-center justify-between" style={{ width: 'var(--board)' }}>
-            <div className="flex items-baseline gap-2">
-              <span className="text-[11px] font-semibold tracking-[.14em] uppercase" style={{ color: 'var(--muted)' }}>Partida</span>
-              <RollingCounter value={score} duration={500} className="text-base font-extrabold" />
-            </div>
-            <div className="flex items-center gap-1.5">
+          {/* Clássico / Aventura */}
+          <div className="panel mode-tabs" style={{ width: 'min(var(--board), 320px)' }}>
+            <button
+              type="button"
+              className={`mode-tab ${level ? '' : 'is-on'}`}
+              onClick={() => { sound.unlock(); if (level) exitToClassic(); }}
+            >
+              <Zap size={14} /> Clássico
+            </button>
+            <button type="button" className={`mode-tab ${level ? 'is-on' : ''}`} onClick={openMap}>
+              <MapIcon size={14} /> Aventura
+            </button>
+          </div>
+
+          <div className="flex items-center justify-between gap-3" style={{ width: 'var(--board)' }}>
+            {level ? (
+              <button type="button" onClick={openMap} className="flex min-w-0 flex-1 items-center gap-2.5 text-left" title="Abrir o mapa">
+                <span
+                  className="grid h-9 min-w-9 shrink-0 place-items-center rounded-xl px-1.5 text-sm font-black text-white"
+                  style={{ background: `linear-gradient(180deg, ${levelConfig(level).chapter.from}, ${levelConfig(level).chapter.to})` }}
+                >
+                  {level}
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="flex items-baseline justify-between text-[11px] font-semibold tracking-[.1em] uppercase" style={{ color: 'var(--muted)' }}>
+                    <span>Nível {level}{levelConfig(level).boss ? ' · Chefão' : ''}</span>
+                    <span className="tabular text-[12px] font-extrabold tracking-normal" style={{ color: 'var(--text)' }}>
+                      {fmt(levelPoints)}/{fmt(levelConfig(level).target)}
+                    </span>
+                  </span>
+                  <span className="adv-progress mt-1 block">
+                    <span className="block" style={{ width: `${Math.min(100, (levelPoints / levelConfig(level).target) * 100)}%` }} />
+                  </span>
+                </span>
+              </button>
+            ) : (
+              <div className="flex items-baseline gap-2">
+                <span className="text-[11px] font-semibold tracking-[.14em] uppercase" style={{ color: 'var(--muted)' }}>Partida</span>
+                <RollingCounter value={score} duration={500} className="text-base font-extrabold" />
+              </div>
+            )}
+            <div className="flex shrink-0 items-center gap-1.5">
+              {level && (
+                <span className="flex items-center" title="Estrelas se você bater a meta na próxima jogada">
+                  {[1, 2, 3].map((i) => (
+                    <Star
+                      key={i}
+                      size={14}
+                      fill="currentColor"
+                      className={i <= starsFor(level, levelMoves + 1) ? 'adv-star-on' : 'adv-star-off'}
+                    />
+                  ))}
+                </span>
+              )}
               {streak >= 1 && (
                 <span
                   key={streak}
@@ -544,13 +726,15 @@ export default function App() {
                   <Flame size={13} /> {streak}
                 </span>
               )}
-              <span
-                className="rounded-full px-2 py-0.5 text-xs font-extrabold"
-                style={{ background: 'color-mix(in srgb, var(--accent) 18%, transparent)', color: 'var(--accent)' }}
-                title={theme.name}
-              >
-                {theme.mult}x
-              </span>
+              {!level && (
+                <span
+                  className="rounded-full px-2 py-0.5 text-xs font-extrabold"
+                  style={{ background: 'color-mix(in srgb, var(--accent) 18%, transparent)', color: 'var(--accent)' }}
+                  title={theme.name}
+                >
+                  {theme.mult}x
+                </span>
+              )}
               <button
                 onClick={askRestart}
                 className={`flex h-7 items-center justify-center gap-1 rounded-full transition active:scale-90 ${
@@ -594,7 +778,7 @@ export default function App() {
       <ParticleCanvas ref={particlesRef} />
 
       <GameOverModal
-        open={gameOver && !shopOpen}
+        open={gameOver && !shopOpen && !level}
         score={score}
         sessionTotal={sessionTotal}
         best={best}
@@ -602,6 +786,13 @@ export default function App() {
         onRestart={restart}
         onShop={() => setShopOpen(true)}
       />
+      <LevelResultModal
+        result={shopOpen || mapOpen ? null : levelResult}
+        onNext={() => startLevel(levelResult.n + 1)}
+        onRetry={() => startLevel(levelResult.n)}
+        onMap={openMap}
+      />
+      <AdventureMap open={mapOpen} stars={advStars} onClose={() => setMapOpen(false)} onPlay={startLevel} />
       <ShopModal
         open={shopOpen}
         onClose={() => setShopOpen(false)}

@@ -31,8 +31,13 @@ export function save(key, value) {
 export const SAVE_KEY = 'tb_save_v1';
 const SALT = 'tessel-block::v1::k7#Qp2';
 export const DEFAULT_SAVE = {
-  balance: 0, owned: ['minimal'], theme: 'minimal', best: 0, sounds: ['classic'], sound: 'classic',
+  balance: 0, owned: ['minimal'], theme: 'minimal', best: 0, sounds: ['classic'], sound: 'classic', adv: [],
 };
+
+/** Modo Aventura: estrelas por nível (0–3), índice 0 = nível 1. */
+const ADV_MAX = 500;
+const cleanAdv = (adv) =>
+  (Array.isArray(adv) ? adv.slice(0, ADV_MAX) : []).map((v) => (Number.isInteger(v) && v >= 0 && v <= 3 ? v : 0));
 
 const uniq = (arr) => [...new Set(arr)];
 
@@ -51,6 +56,7 @@ const normalize = (d, themeIds, soundIds) => {
     best: d.best,
     sounds,
     sound: sounds.includes(d.sound) ? d.sound : 'classic',
+    adv: cleanAdv(d.adv),
   };
 };
 
@@ -86,7 +92,8 @@ function validSave(d, themeIds, soundIds) {
     d.owned.includes(d.theme) &&
     Array.isArray(d.sounds) && d.sounds.includes('classic') &&
     d.sounds.every((id) => soundIds.includes(id)) &&
-    d.sounds.includes(d.sound)
+    d.sounds.includes(d.sound) &&
+    Array.isArray(d.adv)
   );
 }
 
