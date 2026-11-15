@@ -1,13 +1,14 @@
-import { forwardRef, memo, useMemo } from 'react';
+import { forwardRef, memo, useMemo, useSyncExternalStore } from 'react';
 import Block from './Block';
 
 /**
  * Tabuleiro 8x8.
- * hover: { cells: Set<"r,c">, rows: number[], cols: number[], color } | null
+ * hoverStore: store (ver game/drag.js) com { cells: Set<"r,c">, rows: number[], cols: number[], color } | null
  * clearFx: [{ id, r, c, color, delay }]
  */
-const Board = forwardRef(function Board({ grid, theme, hover, clearFx, lastStamp }, ref) {
+const Board = forwardRef(function Board({ grid, theme, hoverStore, clearFx, lastStamp }, ref) {
   const { palette, block } = theme;
+  const hover = useSyncExternalStore(hoverStore.subscribe, hoverStore.get);
 
   const glowSet = useMemo(() => {
     const s = new Set();
