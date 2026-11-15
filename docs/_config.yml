@@ -1,0 +1,8 @@
+# GitHub Pages (Settings → Pages → Deploy from a branch → main / docs)
+title: Tessel Block
+description: Jogo de quebra-cabeça de blocos 8×8
+lang: pt-BR
+theme: jekyll-theme-minimal
+exclude:
+  - PUBLICAR-PLAY-STORE.md
+  - play-console-respostas.md

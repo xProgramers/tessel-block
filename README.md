@@ -34,10 +34,11 @@ O app Android é gerado com [Capacitor](https://capacitorjs.com) e fica em `andr
 ```bash
 npm run android        # gera a web, sincroniza e abre no Android Studio
 npm run android:sync   # só sincroniza depois de mudar o código
+npm run android:bundle # gera o .aab assinado para a Play Store
 npm run icons          # recria ícone, tela de abertura e artes da loja
 ```
 
-Passo a passo completo de publicação: [docs/PUBLICAR-PLAY-STORE.md](docs/PUBLICAR-PLAY-STORE.md). Política de privacidade: [docs/politica-de-privacidade.md](docs/politica-de-privacidade.md). Artes da loja em `store/`.
+Passo a passo completo de publicação: [docs/PUBLICAR-PLAY-STORE.md](docs/PUBLICAR-PLAY-STORE.md). Política de privacidade: [docs/politica-de-privacidade.md](docs/politica-de-privacidade.md). Textos, ícone, imagem de destaque e capturas da loja em `store/` ([store/LISTING.md](store/LISTING.md)). O workflow **Android bundle** do GitHub Actions também gera o `.aab`.
 
 ## Estrutura
 
