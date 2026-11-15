@@ -1,3 +1,4 @@
+import { flushSync } from 'react-dom';
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { Coins, Flame, RotateCcw, Store, Volume2, VolumeX } from 'lucide-react';
 import Board from './components/Board';
@@ -8,6 +9,8 @@ import GameOverModal from './components/GameOverModal';
 import ParticleCanvas from './components/ParticleCanvas';
 import RollingCounter from './components/RollingCounter';
 import { PieceShape } from './components/Block';
+import { createHoverStore, dragPoint } from './game/drag';
+import { praiseFor } from './game/praise';
 import { sound } from './audio/soundEngine';
 import { haptic, onAppPause, onBackButton, setSystemBarsForTheme } from './native';
 import {
@@ -46,7 +49,10 @@ export default function App() {
   const [isRecord, setIsRecord] = useState(false);
   const [shopOpen, setShopOpen] = useState(false);
   const [drag, setDrag] = useState(null);
-  const [hover, setHover] = useState(null);
+  // Prévia do encaixe fica num "store" próprio: atualizá-la durante o arraste re-renderiza
+  // só o tabuleiro, não o App inteiro (antes cada célula nova travava um quadro no Android).
+  const [hoverStore] = useState(createHoverStore);
+  const setHover = hoverStore.set;
   const [floats, setFloats] = useState([]);
   const [clearFx, setClearFx] = useState([]);
   const [lastStamp, setLastStamp] = useState(0);
@@ -128,7 +134,8 @@ export default function App() {
     const withIds = items.map((i) => ({ ...i, id: uid.current++ }));
     const ids = new Set(withIds.map((i) => i.id));
     setFloats((f) => [...f, ...withIds]);
-    setTimeout(() => setFloats((f) => f.filter((x) => !ids.has(x.id))), 1200);
+    const life = Math.max(1200, ...withIds.map((i) => (i.life ?? 0) + (i.delay ?? 0)));
+    setTimeout(() => setFloats((f) => f.filter((x) => !ids.has(x.id))), life);
   };
 
   const screenShake = (amp) => {
@@ -211,13 +218,25 @@ export default function App() {
       const labels = [];
       if (lines >= 2) labels.push(`Combo ${lines}x`);
       if (newStreak >= 2) labels.push(`Streak ${newStreak}`);
-      if (allClear) labels.push('Tabuleiro limpo!');
       if (labels.length) fl.push({ x: cx, y: cy - cs * 1.1, text: labels.join(' · '), variant: 'label', delay: 140 });
+      // Elogio grande no meio do tabuleiro: cresce junto com o combo
+      const praise = praiseFor(lines, newStreak, allClear);
+      if (praise) {
+        fl.push({
+          x: rect.left + rect.width / 2,
+          y: rect.top + rect.height * 0.42,
+          text: praise.text,
+          variant: `praise praise-${praise.tier}`,
+          delay: 60,
+          life: 1500,
+        });
+      }
 
       const fxIds = new Set(fx.map((f) => f.id));
       setClearFx((f) => [...f, ...fx]);
       setTimeout(() => setClearFx((f) => f.filter((x) => !fxIds.has(x.id))), 1000);
 
+      sound.clear(lines, newStreak, allClear);
       setTimeout(() => sound.coinShower(Math.min(lines + newStreak - 1 + (allClear ? 2 : 0), 6)), 60);
       if (big || allClear) screenShake(Math.min(2 + lines * 1.6, 9));
     }
@@ -257,8 +276,7 @@ export default function App() {
   const positionDrag = useCallback(() => {
     const d = dragData.current;
     if (!d) return;
-    const left = d.x - d.w / 2;
-    const top = d.touch ? d.y - d.h - d.cs * 0.9 : d.y - d.h / 2;
+    const { left, top } = dragPoint(d, window.innerWidth, window.innerHeight);
     if (dragElRef.current) dragElRef.current.style.transform = `translate3d(${left}px, ${top}px, 0)`;
 
     const fx = (left - d.rect.left) / d.cs;
@@ -299,8 +317,11 @@ export default function App() {
   const onMove = useCallback((e) => {
     const d = dragData.current;
     if (!d || e.pointerId !== d.id) return;
-    d.x = e.clientX;
-    d.y = e.clientY;
+    // No toque, usa o ponto "previsto" pelo navegador (compensa ~1 quadro de atraso da tela)
+    const predicted = d.touch && e.getPredictedEvents ? e.getPredictedEvents() : null;
+    const p = predicted?.length ? predicted[predicted.length - 1] : e;
+    d.x = p.clientX;
+    d.y = p.clientY;
     positionDrag();
   }, [positionDrag]);
 
@@ -331,10 +352,10 @@ export default function App() {
       id: e.pointerId, index, piece, cs, rect,
       w: piece.w * cs, h: piece.h * cs,
       touch: e.pointerType !== 'mouse',
-      x: e.clientX, y: e.clientY,
+      x: e.clientX, y: e.clientY, sx: e.clientX, sy: e.clientY,
       key: null, target: null, overBoard: false,
     };
-    setDrag({ index, piece, cs });
+    flushSync(() => setDrag({ index, piece, cs })); // peça aparece no mesmo quadro do toque
     window.addEventListener('pointermove', onMove, { passive: true });
     window.addEventListener('pointerup', onUp);
     window.addEventListener('pointercancel', onUp);
@@ -545,7 +566,7 @@ export default function App() {
             </div>
           </div>
 
-          <Board ref={boardRef} grid={grid} theme={theme} hover={hover} clearFx={clearFx} lastStamp={lastStamp} />
+          <Board ref={boardRef} grid={grid} theme={theme} hoverStore={hoverStore} clearFx={clearFx} lastStamp={lastStamp} />
 
           <PieceTray
             pieces={pieces}
