@@ -24,6 +24,7 @@ Abra http://localhost:5173.
 | `npm run dev` | Servidor de desenvolvimento com recarregamento automático |
 | `npm run build` | Gera a versão de produção em `dist/` |
 | `npm run preview` | Serve a versão de produção localmente |
+| `npm test` | Roda os testes (regras do tabuleiro, economia e save) |
 | `npm run simulate` | Simula centenas de partidas com bots e mostra ganho de moedas/min e o tempo para desbloquear a loja |
 
 ## App Android (Google Play)
@@ -53,6 +54,7 @@ src/
     themes.js             os 10 temas da loja (preço, multiplicador, visual)
     sounds.js             os pacotes de som da loja
     format.js             formatação de moedas e save assinado no localStorage
+tests/                    testes (Vitest) — rodam também no CI do GitHub a cada push/PR
 scripts/simulate.mjs      simulador de balanceamento
 scripts/make-icons.mjs    gera ícone, tela de abertura e artes da loja a partir do logo
 assets/                   imagens-fonte do ícone e da abertura
@@ -68,3 +70,5 @@ A economia fica em `src/game/economy.js` e os preços em `src/game/themes.js` e 
 ## Progresso do jogador
 
 O progresso (moedas, temas, sons e recorde) fica no `localStorage` do aparelho, num registro com assinatura que detecta edição manual. Isso dificulta trapaça casual, mas não substitui validação em servidor.
+
+A partida em andamento (tabuleiro, peças e pontuação) também é salva a cada jogada, assinada do mesmo jeito, então o jogo continua de onde parou se o Android fechar o app em segundo plano. Temas ou sons que deixarem de existir numa versão nova são descartados do save sem zerar o resto do progresso.

@@ -10,7 +10,8 @@
     "simulate": "node scripts/simulate.mjs",
     "icons": "node scripts/make-icons.mjs",
     "android": "vite build && cap sync android && cap open android",
-    "android:sync": "vite build && cap sync android"
+    "android:sync": "vite build && cap sync android",
+    "test": "vitest run"
   },
   "dependencies": {
     "@capacitor/android": "^8.6.2",
@@ -29,6 +30,7 @@
     "@tailwindcss/vite": "^4.3.5",
     "@vitejs/plugin-react": "^4.7.0",
     "tailwindcss": "^4.3.5",
-    "vite": "^6.4.6"
+    "vite": "^6.4.6",
+    "vitest": "^3.2.7"
   }
 }
