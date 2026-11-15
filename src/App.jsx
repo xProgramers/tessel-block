@@ -1,12 +1,13 @@
 import { flushSync } from 'react-dom';
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { Coins, Flame, Map as MapIcon, RotateCcw, Star, Store, Volume2, VolumeX, Zap } from 'lucide-react';
+import { ChevronLeft, Coins, Flame, RotateCcw, Star, Store, Volume2, VolumeX } from 'lucide-react';
 import Board from './components/Board';
 import PieceTray from './components/PieceTray';
 import FloatingMoney from './components/FloatingMoney';
 import ShopModal from './components/ShopModal';
 import GameOverModal from './components/GameOverModal';
 import AdventureMap from './components/AdventureMap';
+import HomeMenu from './components/HomeMenu';
 import LevelResultModal from './components/LevelResultModal';
 import ParticleCanvas from './components/ParticleCanvas';
 import RollingCounter from './components/RollingCounter';
@@ -65,7 +66,9 @@ export default function App() {
   const [levelPoints, setLevelPoints] = useState(0);
   const [levelMoves, setLevelMoves] = useState(0);
   const [levelResult, setLevelResult] = useState(null);
-  const [mapOpen, setMapOpen] = useState(false);
+  // Tela atual: menu inicial → (Clássico) partida | (Aventura) mapa → partida do nível
+  const [screen, setScreen] = useState('menu');
+  const mapOpen = screen === 'map';
   const classicStash = useRef(null); // partida clássica guardada enquanto joga a Aventura
   const levelDone = useRef(false); // nível já decidido (bloqueia jogadas até o resultado)
 
@@ -454,7 +457,7 @@ export default function App() {
 
   // Android: botão "voltar" fecha o que estiver aberto; sem nada aberto, minimiza o app
   const uiRef = useRef({});
-  uiRef.current = { shopOpen, confirmRestart, mapOpen };
+  uiRef.current = { shopOpen, confirmRestart, screen, level };
   useEffect(() => onBackButton(() => {
     if (dragData.current) {
       onUp({ pointerId: dragData.current.id, type: 'pointercancel' });
@@ -464,12 +467,16 @@ export default function App() {
       setShopOpen(false);
       return true;
     }
-    if (uiRef.current.mapOpen) {
-      setMapOpen(false);
+    if (uiRef.current.screen === 'map') {
+      setScreen('menu');
       return true;
     }
     if (uiRef.current.confirmRestart) {
       setConfirmRestart(false);
+      return true;
+    }
+    if (uiRef.current.screen === 'game') {
+      setScreen(uiRef.current.level ? 'map' : 'menu');
       return true;
     }
     return false;
@@ -522,7 +529,7 @@ export default function App() {
     setGameOver(false);
     setConfirmRestart(false);
     setClearFx([]);
-    setMapOpen(false);
+    setScreen('game');
     sound.unlock();
     sound.newSet();
   };
@@ -558,7 +565,7 @@ export default function App() {
   const openMap = () => {
     sound.unlock();
     if (levelResult) exitToClassic();
-    setMapOpen(true);
+    setScreen('map');
   };
 
   // Botão de reiniciar no meio da partida pede confirmação (toque duplo)
@@ -631,13 +638,21 @@ export default function App() {
           className="safe-top flex items-center justify-between gap-2 pb-1"
           style={{ width: 'max(min(100% - 24px, 520px), var(--board))' }}
         >
-          <div className="panel flex min-w-0 items-center gap-2.5 rounded-2xl py-2 pr-4 pl-3 shadow-lg shadow-black/20">
+          <button
+            type="button"
+            onClick={() => { sound.unlock(); setScreen(level ? 'map' : 'menu'); }}
+            className="panel grid h-11 w-11 shrink-0 place-items-center rounded-xl transition hover:brightness-125 active:scale-95"
+            aria-label={level ? 'Voltar ao mapa' : 'Voltar ao menu'}
+          >
+            <ChevronLeft size={22} />
+          </button>
+          <div className="panel flex min-w-0 flex-1 items-center gap-2.5 rounded-2xl py-2 pr-4 pl-3 shadow-lg shadow-black/20">
             <div className="grid h-9 w-9 shrink-0 place-items-center rounded-xl" style={{ background: 'color-mix(in srgb, var(--money) 16%, transparent)' }}>
               <Coins className="money-text" size={19} />
             </div>
             <div className="min-w-0 leading-none">
               <div className="mb-1 text-[10px] font-semibold tracking-[.16em] uppercase" style={{ color: 'var(--muted)' }}>
-                Moedas de ouro
+                Moedas
               </div>
               <RollingCounter value={balance} className="money-text text-[22px] font-black tracking-tight sm:text-2xl" />
             </div>
@@ -662,60 +677,42 @@ export default function App() {
 
         {/* Área de jogo */}
         <main className="flex min-h-0 flex-1 flex-col items-center justify-center gap-2.5">
-          {/* Clássico / Aventura */}
-          <div className="panel mode-tabs" style={{ width: 'min(var(--board), 320px)' }}>
-            <button
-              type="button"
-              className={`mode-tab ${level ? '' : 'is-on'}`}
-              onClick={() => { sound.unlock(); if (level) exitToClassic(); }}
-            >
-              <Zap size={14} /> Clássico
-            </button>
-            <button type="button" className={`mode-tab ${level ? 'is-on' : ''}`} onClick={openMap}>
-              <MapIcon size={14} /> Aventura
-            </button>
-          </div>
-
-          <div className="flex items-center justify-between gap-3" style={{ width: 'var(--board)' }}>
+          {/* Placar no centro: na Aventura, pontos → meta; no Clássico, a pontuação da partida */}
+          <div className="score-hud" style={{ width: 'var(--board)' }}>
             {level ? (
-              <button type="button" onClick={openMap} className="flex min-w-0 flex-1 items-center gap-2.5 text-left" title="Abrir o mapa">
-                <span
-                  className="grid h-9 min-w-9 shrink-0 place-items-center rounded-xl px-1.5 text-sm font-black text-white"
-                  style={{ background: `linear-gradient(180deg, ${levelConfig(level).chapter.from}, ${levelConfig(level).chapter.to})` }}
-                >
-                  {level}
-                </span>
-                <span className="min-w-0 flex-1">
-                  <span className="flex items-baseline justify-between text-[11px] font-semibold tracking-[.1em] uppercase" style={{ color: 'var(--muted)' }}>
-                    <span>Nível {level}{levelConfig(level).boss ? ' · Chefão' : ''}</span>
-                    <span className="tabular text-[12px] font-extrabold tracking-normal" style={{ color: 'var(--text)' }}>
-                      {fmt(levelPoints)}/{fmt(levelConfig(level).target)}
-                    </span>
+              <>
+                <div className="score-sub mb-1.5 flex items-center gap-2">
+                  <span>Nível {level}{levelConfig(level).boss ? ' · Chefão' : ''}</span>
+                  <span className="flex items-center" title="Estrelas se você bater a meta na próxima jogada">
+                    {[1, 2, 3].map((i) => (
+                      <Star
+                        key={i}
+                        size={12}
+                        fill="currentColor"
+                        className={i <= starsFor(level, levelMoves + 1) ? 'adv-star-on' : 'adv-star-off'}
+                      />
+                    ))}
                   </span>
-                  <span className="adv-progress mt-1 block">
+                </div>
+                <div className="goal-row">
+                  <span className="goal-now tabular">
+                    <RollingCounter value={levelPoints} duration={450} coin={false} />
+                  </span>
+                  <span className="adv-progress">
                     <span className="block" style={{ width: `${Math.min(100, (levelPoints / levelConfig(level).target) * 100)}%` }} />
                   </span>
-                </span>
-              </button>
+                  <span className={`goal-target tabular ${levelPoints >= levelConfig(level).target ? 'is-hit' : ''}`}>
+                    {fmt(levelConfig(level).target)}
+                  </span>
+                </div>
+              </>
             ) : (
-              <div className="flex items-baseline gap-2">
-                <span className="text-[11px] font-semibold tracking-[.14em] uppercase" style={{ color: 'var(--muted)' }}>Partida</span>
-                <RollingCounter value={score} duration={500} className="text-base font-extrabold" />
-              </div>
+              <>
+                <RollingCounter value={score} duration={500} className="score-big tabular" />
+                <div className="score-sub mt-1">Recorde {fmt(Math.max(best, score))}</div>
+              </>
             )}
-            <div className="flex shrink-0 items-center gap-1.5">
-              {level && (
-                <span className="flex items-center" title="Estrelas se você bater a meta na próxima jogada">
-                  {[1, 2, 3].map((i) => (
-                    <Star
-                      key={i}
-                      size={14}
-                      fill="currentColor"
-                      className={i <= starsFor(level, levelMoves + 1) ? 'adv-star-on' : 'adv-star-off'}
-                    />
-                  ))}
-                </span>
-              )}
+            <div className="absolute top-0 right-0 flex items-center gap-1.5">
               {streak >= 1 && (
                 <span
                   key={streak}
@@ -724,15 +721,6 @@ export default function App() {
                   title="Sequência de jogadas limpando linhas"
                 >
                   <Flame size={13} /> {streak}
-                </span>
-              )}
-              {!level && (
-                <span
-                  className="rounded-full px-2 py-0.5 text-xs font-extrabold"
-                  style={{ background: 'color-mix(in srgb, var(--accent) 18%, transparent)', color: 'var(--accent)' }}
-                  title={theme.name}
-                >
-                  {theme.mult}x
                 </span>
               )}
               <button
@@ -748,6 +736,15 @@ export default function App() {
                 {confirmRestart && 'Reiniciar?'}
               </button>
             </div>
+            {!level && (
+              <span
+                className="absolute top-0 left-0 rounded-full px-2 py-0.5 text-xs font-extrabold"
+                style={{ background: 'color-mix(in srgb, var(--accent) 18%, transparent)', color: 'var(--accent)' }}
+                title={`${theme.name}: moedas ${theme.mult}x`}
+              >
+                {theme.mult}x
+              </span>
+            )}
           </div>
 
           <Board ref={boardRef} grid={grid} theme={theme} hoverStore={hoverStore} clearFx={clearFx} lastStamp={lastStamp} />
@@ -778,7 +775,7 @@ export default function App() {
       <ParticleCanvas ref={particlesRef} />
 
       <GameOverModal
-        open={gameOver && !shopOpen && !level}
+        open={gameOver && !shopOpen && !level && screen === 'game'}
         score={score}
         sessionTotal={sessionTotal}
         best={best}
@@ -787,12 +784,29 @@ export default function App() {
         onShop={() => setShopOpen(true)}
       />
       <LevelResultModal
-        result={shopOpen || mapOpen ? null : levelResult}
+        result={shopOpen || screen !== 'game' ? null : levelResult}
         onNext={() => startLevel(levelResult.n + 1)}
         onRetry={() => startLevel(levelResult.n)}
         onMap={openMap}
       />
-      <AdventureMap open={mapOpen} stars={advStars} onClose={() => setMapOpen(false)} onPlay={startLevel} />
+      <AdventureMap open={mapOpen} stars={advStars} onClose={() => setScreen('menu')} onPlay={startLevel} />
+      <HomeMenu
+        open={screen === 'menu' && !shopOpen}
+        theme={theme}
+        balance={balance}
+        best={best}
+        classicScore={classicStash.current ? classicStash.current.score : level ? 0 : score}
+        advStars={advStars}
+        muted={muted}
+        onToggleMute={toggleMute}
+        onClassic={() => {
+          sound.unlock();
+          if (level) exitToClassic();
+          setScreen('game');
+        }}
+        onAdventure={() => { sound.unlock(); setScreen('map'); }}
+        onShop={() => { sound.unlock(); setShopOpen(true); }}
+      />
       <ShopModal
         open={shopOpen}
         onClose={() => setShopOpen(false)}
