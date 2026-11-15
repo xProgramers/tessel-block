@@ -11,10 +11,13 @@ import { PieceShape } from './components/Block';
 import { sound } from './audio/soundEngine';
 import { haptic, onAppPause, onBackButton, setSystemBarsForTheme } from './native';
 import {
-  anyFit, canPlace, clearLines, emptyGrid, findFullLines, generateSet, isBoardEmpty, placePiece,
+  anyFit, canPlace, clearLines, emptyGrid, findFullLines, generateSet, isBoardEmpty, placePiece, SIZE,
 } from './game/logic';
+import { COLOR_COUNT, withNewId } from './game/pieces';
 import { getTheme, THEME_IDS, THEMES } from './game/themes';
-import { fmt, load, loadSave, save, SAVE_KEY, writeSave } from './game/format';
+import {
+  clearGame, fmt, load, loadGame, loadSave, save, SAVE_KEY, saveGame, writeSave,
+} from './game/format';
 import { computeGain, ECONOMY } from './game/economy';
 import { SOUND_IDS, SOUND_PACKS } from './game/sounds';
 
@@ -22,18 +25,23 @@ export default function App() {
   const [initial] = useState(() => loadSave(THEME_IDS, SOUND_IDS));
   const [ownedSounds, setOwnedSounds] = useState(initial.data.sounds);
   const [soundId, setSoundId] = useState(initial.data.sound);
-  const [grid, setGrid] = useState(emptyGrid);
-  const [pieces, setPieces] = useState(() => generateSet(emptyGrid()));
+  // Partida em andamento salva (se o app foi fechado no meio de uma partida)
+  const [resumed] = useState(() => {
+    const g = loadGame(SIZE, COLOR_COUNT);
+    return g && { ...g, pieces: g.pieces.map((p) => (p ? withNewId(p) : null)) };
+  });
+  const [grid, setGrid] = useState(() => resumed?.grid ?? emptyGrid());
+  const [pieces, setPieces] = useState(() => resumed?.pieces ?? generateSet(emptyGrid()));
   const [balance, setBalance] = useState(initial.data.balance);
   const [owned, setOwned] = useState(initial.data.owned);
   const [themeId, setThemeId] = useState(initial.data.theme);
   const [muted, setMuted] = useState(() => load('bc_muted', false));
   const [best, setBest] = useState(initial.data.best);
   const [confirmRestart, setConfirmRestart] = useState(false);
-  const [score, setScore] = useState(0);
+  const [score, setScore] = useState(resumed?.score ?? 0);
   const [sessionTotal, setSessionTotal] = useState(0);
-  const [streak, setStreak] = useState(0);
-  const [missCount, setMissCount] = useState(0);
+  const [streak, setStreak] = useState(resumed?.streak ?? 0);
+  const [missCount, setMissCount] = useState(resumed?.missCount ?? 0);
   const [gameOver, setGameOver] = useState(false);
   const [isRecord, setIsRecord] = useState(false);
   const [shopOpen, setShopOpen] = useState(false);
@@ -63,6 +71,20 @@ export default function App() {
   }, [balance, owned, themeId, best, ownedSounds, soundId]);
 
   useEffect(() => sound.setPlacePack(soundId), [soundId]);
+
+  // Partida em andamento: salva a cada jogada; terminada, apaga (a próxima abertura começa do zero)
+  useEffect(() => {
+    if (gameOver) clearGame();
+    else saveGame({ grid, pieces, score, streak, missCount });
+  }, [grid, pieces, score, streak, missCount, gameOver]);
+
+  // Partida restaurada sem jogada possível (o app fechou durante o "game over"): encerra agora
+  useEffect(() => {
+    if (!resumed || resumed.pieces.some((p) => p && anyFit(resumed.grid, p))) return;
+    setIsRecord(resumed.score > initial.data.best);
+    setBest((b) => Math.max(b, resumed.score));
+    setGameOver(true);
+  }, [resumed, initial]);
 
   useEffect(() => {
     if (initial.tampered) console.warn('[Tessel Block] Save inválido ou editado — progresso reiniciado.');
