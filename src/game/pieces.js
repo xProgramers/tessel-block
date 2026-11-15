@@ -33,6 +33,9 @@ let nextId = 1;
 
 export const COLOR_COUNT = 7;
 
+/** Dá um id novo a uma peça (ex.: peças restauradas de uma partida salva). */
+export const withNewId = (piece) => ({ ...piece, id: nextId++ });
+
 export function randomPiece() {
   let roll = Math.random() * TOTAL_WEIGHT;
   let shape = SHAPES[0];
