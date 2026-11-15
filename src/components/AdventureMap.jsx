@@ -32,17 +32,17 @@ const LAYOUT = mosaicLayout();
  */
 export default function AdventureMap({ open, stars, onClose, onPlay }) {
   const current = nextLevel(stars) ?? LEVEL_COUNT;
-  const [selected, setSelected] = useState(current);
+  // Nada selecionado ao abrir: o botão de jogar só aparece depois de tocar num nível
+  const [selected, setSelected] = useState(null);
   const total = useMemo(() => stars.reduce((a, b) => a + (b || 0), 0), [stars]);
   const done = stars.filter((s) => s > 0).length;
 
-  // Cada vez que abre, o selecionado volta a ser o próximo nível a jogar
+  // Cada vez que abre, limpa a seleção
   useEffect(() => {
-    if (open) setSelected(current);
-  }, [open, current]);
+    if (open) setSelected(null);
+  }, [open]);
 
   if (!open) return null;
-  const ch = chapterOf(selected);
 
   return (
     <div className="adv-map fade-in fixed inset-0 z-[78] flex flex-col">
@@ -56,7 +56,7 @@ export default function AdventureMap({ open, stars, onClose, onPlay }) {
         </div>
       </header>
 
-      <div className="scroll-thin flex flex-1 flex-col items-center overflow-y-auto px-4 pb-32" style={{ touchAction: 'pan-y' }}>
+      <div className="scroll-thin flex flex-1 flex-col items-center overflow-y-auto px-4 pb-24" style={{ touchAction: 'pan-y' }}>
         <TesselGem stars={stars} />
         <p className="adv-caption">
           {done === LEVEL_COUNT ? 'Joia conquistada!' : `Vença os ${LEVEL_COUNT} níveis para conquistar a joia`}
@@ -101,18 +101,17 @@ export default function AdventureMap({ open, stars, onClose, onPlay }) {
           })}
         </div>
 
-        <div className="adv-chapter-tag" style={{ '--c': ch.from }}>
-          <span>{ch.icon}</span> {ch.name}
-          {isBoss(selected) && <em>Chefão</em>}
-        </div>
       </div>
 
-      <div className="safe-bottom adv-cta-wrap px-5 pt-3">
-        <button type="button" className="adv-cta" onClick={() => onPlay(selected)}>
-          <Play size={20} fill="currentColor" /> Nível {selected}
-          {stars[selected - 1] > 0 && <span className="adv-cta-replay">jogar de novo</span>}
-        </button>
-      </div>
+      {selected != null && (
+        <div className="safe-bottom adv-cta-wrap px-5 pt-3">
+          <button type="button" className="adv-cta adv-cta-in" onClick={() => onPlay(selected)}>
+            <Play size={18} fill="currentColor" /> Jogar nível {selected}
+            {isBoss(selected) && <span className="adv-cta-replay">chefão</span>}
+            {stars[selected - 1] > 0 && <span className="adv-cta-replay">de novo</span>}
+          </button>
+        </div>
+      )}
     </div>
   );
 }
