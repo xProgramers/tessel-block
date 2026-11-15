@@ -2,10 +2,10 @@ import { memo } from 'react';
 import { PieceShape } from './Block';
 
 /** Bandeja com as 3 peças disponíveis. */
-function PieceTray({ pieces, fits, theme, draggingIndex, onPointerDown }) {
+function PieceTray({ pieces, fits, theme, draggingIndex, onPointerDown, stuck = false }) {
   return (
     <div
-      className="grid grid-cols-3 items-center"
+      className={`grid grid-cols-3 items-center ${stuck ? 'tray-stuck' : ''}`}
       style={{ width: 'var(--board)', height: 'calc(var(--board) * 0.34)' }}
     >
       {pieces.map((piece, i) => (
