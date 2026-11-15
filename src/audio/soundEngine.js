@@ -345,6 +345,20 @@ export const sound = {
     }, 2);
   },
 
+  /** Vitória num nível da Aventura: fanfarra curta que cresce com as estrelas. */
+  levelWin(stars = 1) {
+    run(() => {
+      const seq = [523.25, 659.25, 783.99, 1046.5, 1318.51];
+      seq.forEach((f, i) => bell(f, i * 0.09, 0.15, 0.4));
+      const end = seq.length * 0.09;
+      [523.25, 659.25, 783.99, 1046.5].forEach((f) => bell(f * (stars >= 3 ? 1.5 : 1), end, 0.09, 1.2, 0.5));
+      tone({ type: 'sine', f: 90, f2: 40, at: end, glide: 0.4, dur: 0.6, vol: 0.7, attack: 0.003 });
+      hiss({ at: end - 0.2, dur: 0.35, vol: 0.18, type: 'bandpass', freq: 800, freq2: 7000, q: 1, attack: 0.15, rev: 0.4 });
+      // uma "estrela" (plim) por estrela, no ritmo da animação da tela
+      for (let i = 0; i < stars; i++) bell(2093 * (1 + i * 0.125), 0.9 + i * 0.22, 0.12, 0.5, 0.5);
+    }, 1.3);
+  },
+
   /** Soltou fora de lugar: "bonk" abafado. */
   invalid() {
     run(() => {

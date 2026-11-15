@@ -8,6 +8,7 @@
     "build": "vite build",
     "preview": "vite preview",
     "simulate": "node scripts/simulate.mjs",
+    "calibrate": "node scripts/calibrate-adventure.mjs",
     "icons": "node scripts/make-icons.mjs",
     "android": "vite build && cap sync android && cap open android",
     "android:sync": "vite build && cap sync android",

@@ -6,9 +6,16 @@ import { emptyGrid, placePiece } from '../src/game/logic.js';
 
 const THEMES = ['minimal', 'candy', 'zen'];
 const SOUNDS = ['classic', 'wood'];
-const progress = { balance: 1234, owned: ['minimal', 'candy'], theme: 'candy', best: 99, sounds: ['classic', 'wood'], sound: 'wood' };
+const progress = { balance: 1234, owned: ['minimal', 'candy'], theme: 'candy', best: 99, sounds: ['classic', 'wood'], sound: 'wood', adv: [3, 2, 1] };
 
 describe('progresso do jogador', () => {
+  it('save antigo sem Aventura ganha estrelas vazias; valores inválidos viram 0', () => {
+    const { adv, ...old } = progress;
+    writeSave({ ...old, adv: [3, 9, -1, 'x', 2] });
+    expect(loadSave(THEMES, SOUNDS).data.adv).toEqual([3, 0, 0, 0, 2]);
+    writeSave(old);
+    expect(loadSave(THEMES, SOUNDS).data.adv).toEqual([]);
+  });
   it('grava e lê de volta', () => {
     writeSave(progress);
     expect(loadSave(THEMES, SOUNDS)).toEqual({ data: progress, tampered: false });
@@ -30,7 +37,7 @@ describe('progresso do jogador', () => {
     writeSave(progress);
     const { data, tampered } = loadSave(['minimal', 'zen'], ['classic']);
     expect(tampered).toBe(false);
-    expect(data).toEqual({ balance: 1234, owned: ['minimal'], theme: 'minimal', best: 99, sounds: ['classic'], sound: 'classic' });
+    expect(data).toEqual({ balance: 1234, owned: ['minimal'], theme: 'minimal', best: 99, sounds: ['classic'], sound: 'classic', adv: [3, 2, 1] });
   });
   it('save antigo sem sons ganha os padrões', () => {
     writeSave({ balance: 5, owned: ['minimal'], theme: 'minimal', best: 0 });
