@@ -698,3 +698,59 @@ body,
   from { transform: scale(0) rotate(-40deg); opacity: 0; }
   to { transform: none; opacity: 1; }
 }
+
+/* ---------- Joia Tessel (topo do mapa) ---------- */
+.gem { position: relative; margin-top: 4px; }
+.gem svg { display: block; width: 100%; height: auto; overflow: visible; }
+.gem-facet {
+  fill: #1e293b;
+  stroke: #64748b;
+  stroke-width: 1;
+  stroke-linejoin: round;
+  transition: fill .6s ease;
+}
+.gem-facet:nth-child(odd) { fill: #273449; }
+.gem-facet.is-on { stroke: rgba(255, 255, 255, .55); }
+.gem-outline { fill: none; stroke: #94a3b8; stroke-width: 1.5; stroke-linejoin: round; opacity: .7; }
+.gem-shine { pointer-events: none; opacity: .35; }
+.gem.is-complete .gem-outline { stroke: #fff; opacity: .9; }
+.gem.is-complete .gem-shine { opacity: .8; }
+.gem.is-complete svg { filter: drop-shadow(0 0 18px rgba(167, 139, 250, .65)) drop-shadow(0 0 30px rgba(56, 189, 248, .35)); }
+.gem-spark {
+  position: absolute; width: 14px; height: 14px;
+  background: radial-gradient(circle, #fff 0 18%, transparent 20%),
+    conic-gradient(from 45deg, transparent 0 20%, #fff 22% 28%, transparent 30% 45%, #fff 47% 53%, transparent 55% 70%, #fff 72% 78%, transparent 80%);
+  animation: gem-spark 1.8s ease-in-out infinite;
+}
+@keyframes gem-spark { 0%, 100% { transform: scale(0) rotate(0); opacity: 0; } 50% { transform: scale(1) rotate(90deg); opacity: 1; } }
+
+/* ---------- Sem espaço (fim de partida sem tampar o tabuleiro) ---------- */
+.tray-stuck .tray-piece { opacity: .5; filter: grayscale(1) brightness(.85); transition: filter .5s ease, opacity .5s ease; }
+.stuck-bar {
+  position: fixed; left: 50%; bottom: 0; z-index: 72;
+  width: min(100% - 24px, 460px);
+  transform: translateX(-50%);
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  margin-bottom: max(env(safe-area-inset-bottom), 12px);
+  padding: 12px 12px 12px 18px;
+  border-radius: 22px;
+  background: color-mix(in srgb, var(--panel) 92%, black);
+  border: 1px solid var(--panel-border);
+  box-shadow: 0 18px 40px -16px #000;
+  animation: stuck-in 380ms cubic-bezier(.2, 1.2, .3, 1) both;
+}
+@keyframes stuck-in { from { transform: translate(-50%, 120%); opacity: 0; } to { transform: translate(-50%, 0); opacity: 1; } }
+.stuck-text { display: flex; flex-direction: column; min-width: 0; line-height: 1.15; }
+.stuck-text strong { font-size: 17px; font-weight: 900; }
+.stuck-text span { font-size: 12.5px; font-weight: 700; color: var(--muted); }
+.stuck-btn {
+  display: flex; align-items: center; gap: 7px; white-space: nowrap;
+  padding: 12px 16px; border-radius: 16px; font-size: 15px; font-weight: 900; color: #052e16;
+  background: linear-gradient(180deg, #4ade80, #16a34a);
+  box-shadow: inset 0 -4px 0 rgba(0, 0, 0, .2);
+}
+.stuck-btn:active { transform: translateY(2px); }
+.stuck-btn-secondary {
+  display: grid; place-items: center; width: 46px; border-radius: 16px; color: var(--text);
+  background: rgba(255, 255, 255, .08);
+}

@@ -1,11 +1,10 @@
 import { flushSync } from 'react-dom';
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { ChevronLeft, Coins, Flame, RotateCcw, Star, Store, Volume2, VolumeX } from 'lucide-react';
+import { ChevronLeft, Coins, Flame, Map as MapIcon, RotateCcw, Star, Store, Volume2, VolumeX } from 'lucide-react';
 import Board from './components/Board';
 import PieceTray from './components/PieceTray';
 import FloatingMoney from './components/FloatingMoney';
 import ShopModal from './components/ShopModal';
-import GameOverModal from './components/GameOverModal';
 import AdventureMap from './components/AdventureMap';
 import HomeMenu from './components/HomeMenu';
 import LevelResultModal from './components/LevelResultModal';
@@ -73,6 +72,8 @@ export default function App() {
   const levelDone = useRef(false); // nível já decidido (bloqueia jogadas até o resultado)
 
   const theme = getTheme(themeId);
+  // Ficou sem espaço (Clássico: fim de partida; Aventura: nível perdido)
+  const stuck = level ? Boolean(levelResult && !levelResult.won) : gameOver;
 
   const boardRef = useRef(null);
   const dragElRef = useRef(null);
@@ -750,6 +751,7 @@ export default function App() {
           <Board ref={boardRef} grid={grid} theme={theme} hoverStore={hoverStore} clearFx={clearFx} lastStamp={lastStamp} />
 
           <PieceTray
+            stuck={stuck}
             pieces={pieces}
             fits={fits}
             theme={theme}
@@ -774,17 +776,32 @@ export default function App() {
       <FloatingMoney items={floats} />
       <ParticleCanvas ref={particlesRef} />
 
-      <GameOverModal
-        open={gameOver && !shopOpen && !level && screen === 'game'}
-        score={score}
-        sessionTotal={sessionTotal}
-        best={best}
-        isRecord={isRecord}
-        onRestart={restart}
-        onShop={() => setShopOpen(true)}
-      />
+      {/* Sem espaço: nada de tela por cima — o tabuleiro fica à vista para o jogador
+          ver onde errou, as peças ficam em preto e branco e o botão aparece embaixo. */}
+      {stuck && screen === 'game' && !shopOpen && (
+        <div className="stuck-bar safe-bottom">
+          <div className="stuck-text">
+            <strong>Sem espaço!</strong>
+            <span>
+              {level
+                ? `${fmt(levelResult.points)} de ${fmt(levelResult.target)} pontos`
+                : isRecord && score > 0 ? '✨ Novo recorde!' : `Recorde ${fmt(Math.max(best, score))}`}
+            </span>
+          </div>
+          <div className="flex gap-2">
+            {level && (
+              <button type="button" className="stuck-btn-secondary" onClick={openMap} aria-label="Mapa">
+                <MapIcon size={18} />
+              </button>
+            )}
+            <button type="button" className="stuck-btn" onClick={level ? () => startLevel(level) : restart} autoFocus>
+              <RotateCcw size={17} /> {level ? 'Tentar de novo' : 'Jogar de novo'}
+            </button>
+          </div>
+        </div>
+      )}
       <LevelResultModal
-        result={shopOpen || screen !== 'game' ? null : levelResult}
+        result={shopOpen || screen !== 'game' || !levelResult?.won ? null : levelResult}
         onNext={() => startLevel(levelResult.n + 1)}
         onRetry={() => startLevel(levelResult.n)}
         onMap={openMap}

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { ChevronLeft, Play, Star } from 'lucide-react';
+import TesselGem from './TesselGem';
 import { chapterOf, isBoss, isUnlocked, LEVEL_COUNT, nextLevel } from '../game/adventure';
 
 /*
@@ -56,9 +57,10 @@ export default function AdventureMap({ open, stars, onClose, onPlay }) {
       </header>
 
       <div className="scroll-thin flex flex-1 flex-col items-center overflow-y-auto px-4 pb-32" style={{ touchAction: 'pan-y' }}>
+        <TesselGem stars={stars} />
         <p className="adv-caption">
-          Vença os {LEVEL_COUNT} níveis e revele a <b>Joia Tessel</b>
-          <span>{done}/{LEVEL_COUNT} ladrilhos</span>
+          {done === LEVEL_COUNT ? 'Joia conquistada!' : `Vença os ${LEVEL_COUNT} níveis para conquistar a joia`}
+          <span>{done}/{LEVEL_COUNT} níveis</span>
         </p>
 
         <div
