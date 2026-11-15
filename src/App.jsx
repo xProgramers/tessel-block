@@ -760,7 +760,7 @@ export default function App() {
           />
         </main>
 
-        <footer className="safe-bottom px-4 text-center text-[10.5px] opacity-70" style={{ color: 'var(--muted)' }}>
+        <footer className="safe-bottom px-4 text-center text-[10.5px] opacity-70" style={{ color: 'var(--muted)', visibility: stuck ? 'hidden' : undefined }}>
           Jogo recreativo — moedas virtuais sem valor monetário.
         </footer>
       </div>
@@ -779,23 +779,21 @@ export default function App() {
       {/* Sem espaço: nada de tela por cima — o tabuleiro fica à vista para o jogador
           ver onde errou, as peças ficam em preto e branco e o botão aparece embaixo. */}
       {stuck && screen === 'game' && !shopOpen && (
-        <div className="stuck-bar safe-bottom">
-          <div className="stuck-text">
-            <strong>Sem espaço!</strong>
-            <span>
-              {level
-                ? `${fmt(levelResult.points)} de ${fmt(levelResult.target)} pontos`
-                : isRecord && score > 0 ? '✨ Novo recorde!' : `Recorde ${fmt(Math.max(best, score))}`}
-            </span>
-          </div>
-          <div className="flex gap-2">
+        <div className="stuck-bar">
+          <span className="stuck-note">
+            Sem espaço ·{' '}
+            {level
+              ? `${fmt(levelResult.points)} de ${fmt(levelResult.target)} pontos`
+              : isRecord && score > 0 ? '✨ novo recorde!' : `recorde ${fmt(Math.max(best, score))}`}
+          </span>
+          <div className="stuck-actions">
             {level && (
               <button type="button" className="stuck-btn-secondary" onClick={openMap} aria-label="Mapa">
-                <MapIcon size={18} />
+                <MapIcon size={16} />
               </button>
             )}
-            <button type="button" className="stuck-btn" onClick={level ? () => startLevel(level) : restart} autoFocus>
-              <RotateCcw size={17} /> {level ? 'Tentar de novo' : 'Jogar de novo'}
+            <button type="button" className="stuck-btn" onClick={level ? () => startLevel(level) : restart}>
+              <RotateCcw size={15} /> Tentar de novo
             </button>
           </div>
         </div>

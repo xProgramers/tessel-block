@@ -721,29 +721,24 @@ body,
 .tray-stuck .tray-piece { opacity: .5; filter: grayscale(1) brightness(.85); transition: filter .5s ease, opacity .5s ease; }
 .stuck-bar {
   position: fixed; left: 50%; bottom: 0; z-index: 72;
-  width: min(100% - 24px, 460px);
   transform: translateX(-50%);
-  display: flex; align-items: center; justify-content: space-between; gap: 12px;
-  margin-bottom: max(env(safe-area-inset-bottom), 12px);
-  padding: 12px 12px 12px 18px;
-  border-radius: 22px;
-  background: color-mix(in srgb, var(--panel) 92%, black);
-  border: 1px solid var(--panel-border);
-  box-shadow: 0 18px 40px -16px #000;
-  animation: stuck-in 380ms cubic-bezier(.2, 1.2, .3, 1) both;
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+  margin-bottom: max(env(safe-area-inset-bottom), 14px);
+  pointer-events: none;
+  /* espera o jogador ver as peças ficando cinza antes de oferecer o botão */
+  animation: stuck-in 400ms ease-out 900ms both;
 }
-@keyframes stuck-in { from { transform: translate(-50%, 120%); opacity: 0; } to { transform: translate(-50%, 0); opacity: 1; } }
-.stuck-text { display: flex; flex-direction: column; min-width: 0; line-height: 1.15; }
-.stuck-text strong { font-size: 17px; font-weight: 900; }
-.stuck-text span { font-size: 12.5px; font-weight: 700; color: var(--muted); }
+@keyframes stuck-in { from { transform: translate(-50%, 10px); opacity: 0; } to { transform: translate(-50%, 0); opacity: 1; } }
+.stuck-note { font-size: 12.5px; font-weight: 700; color: var(--muted); white-space: nowrap; }
+.stuck-actions { display: flex; gap: 8px; pointer-events: auto; }
 .stuck-btn {
-  display: flex; align-items: center; gap: 7px; white-space: nowrap;
-  padding: 12px 16px; border-radius: 16px; font-size: 15px; font-weight: 900; color: #052e16;
+  display: flex; align-items: center; gap: 6px; white-space: nowrap;
+  padding: 8px 16px; border-radius: 999px; font-size: 14px; font-weight: 900; color: #052e16;
   background: linear-gradient(180deg, #4ade80, #16a34a);
-  box-shadow: inset 0 -4px 0 rgba(0, 0, 0, .2);
+  box-shadow: inset 0 -3px 0 rgba(0, 0, 0, .2), 0 8px 20px -10px #16a34a;
 }
 .stuck-btn:active { transform: translateY(2px); }
 .stuck-btn-secondary {
-  display: grid; place-items: center; width: 46px; border-radius: 16px; color: var(--text);
+  display: grid; place-items: center; width: 38px; border-radius: 999px; color: var(--text);
   background: rgba(255, 255, 255, .08);
 }
