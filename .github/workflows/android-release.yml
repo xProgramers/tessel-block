@@ -20,6 +20,8 @@ on:
 jobs:
   bundle:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -62,6 +64,16 @@ jobs:
           name: tessel-block-aab
           path: android/app/build/outputs/bundle/release/app-release.aab
           if-no-files-found: error
+
+      - name: Publicar .aab sem assinatura num rascunho de release (só no branch ci/aab-para-assinar)
+        if: github.head_ref == 'ci/aab-para-assinar'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cp android/app/build/outputs/bundle/release/app-release.aab tessel-block-unsigned.aab
+          gh release view ci-aab --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1 || \
+            gh release create ci-aab --repo "$GITHUB_REPOSITORY" --draft --title "CI: .aab para assinar" --notes "Temporário."
+          gh release upload ci-aab tessel-block-unsigned.aab --repo "$GITHUB_REPOSITORY" --clobber
 
       - name: Apagar chave
         if: always()
