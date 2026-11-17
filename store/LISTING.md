@@ -45,9 +45,9 @@ Estúdio Minimalista, Doces & Gelatina, Madeira Zen, Cyber Neon, Arcade Pixel, A
 Pop Clássico, Bloco de Madeira, Bolha Pop e Cristal — escolha o "toc" que mais combina com você.
 
 ✦ FEITO PARA RELAXAR
-• Funciona 100% offline
-• Sem anúncios e sem compras
-• Sem cadastro e sem coleta de dados
+• Funciona offline
+• Sem compras e sem cadastro
+• Poucos anúncios: um vídeo opcional dobra suas moedas no fim da partida
 • Vibração e efeitos caprichados
 • A partida é salva sozinha: feche o app e continue depois
 
@@ -85,9 +85,9 @@ From Minimal Studio and Candy Jelly to Cyber Neon, Arcade Pixel, Cosmic Galaxy a
 Classic Pop, Wood Block, Bubble Pop and Crystal — pick the click you like best.
 
 ✦ MADE TO RELAX
-• Works 100% offline
-• No ads and no purchases
-• No sign-up and no data collection
+• Plays offline
+• No purchases and no sign-up
+• Light ads: an optional video doubles your coins at the end of a game
 • Satisfying haptics and effects
 • Your game saves automatically — close the app and pick up later
 

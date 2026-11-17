@@ -29,7 +29,7 @@ Abra http://localhost:5173.
 
 ## App Android (Google Play)
 
-O app Android é gerado com [Capacitor](https://capacitorjs.com) e fica em `android/`. Funciona 100% offline (fonte embutida, sem permissão de internet), com vibração, botão voltar e tela travada em retrato.
+O app Android é gerado com [Capacitor](https://capacitorjs.com) e fica em `android/`. Funciona offline (fonte embutida), com vibração, botão voltar e tela travada em retrato. A internet só é usada pelos anúncios.
 
 ```bash
 npm run android        # gera a web, sincroniza e abre no Android Studio
@@ -63,6 +63,16 @@ store/                    ícone 512 e imagem de destaque para a Play Store
 android/                  projeto Android (Capacitor)
 docs/                     guia de publicação e política de privacidade
 ```
+
+## Anúncios (AdMob)
+
+Só no app Android, em `src/ads.js`, com a conta AdMob do projeto (IDs do app e dos blocos ficam ali e no `AndroidManifest.xml`):
+
+- **Premiado:** no fim da partida clássica, um botão opcional mostra um vídeo e dobra as moedas ganhas nela.
+- **Intersticial:** tela cheia ao começar outra partida, no máximo a cada 3 partidas e com 2 min de intervalo (`src/game/adPacing.js`).
+- Na Europa/Reino Unido, o formulário de consentimento do Google aparece antes do primeiro anúncio.
+
+Para testar no celular sem usar anúncios reais: `npm run android:sync:test-ads`. **Nunca toque em anúncios reais no seu próprio aparelho**: o AdMob conta como tráfego inválido e pode suspender a conta. No navegador não há anúncios.
 
 ## Balanceamento
 
