@@ -13,9 +13,11 @@
     "android": "vite build && cap sync android && cap open android",
     "android:sync": "vite build && cap sync android",
     "android:bundle": "node scripts/android-bundle.mjs",
-    "test": "vitest run"
+    "test": "vitest run",
+    "android:sync:test-ads": "VITE_ADS_TEST=1 vite build && cap sync android"
   },
   "dependencies": {
+    "@capacitor-community/admob": "8.3.0",
     "@capacitor/android": "^8.6.2",
     "@capacitor/app": "^8.1.2",
     "@capacitor/core": "^8.6.2",

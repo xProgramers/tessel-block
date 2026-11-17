@@ -21,6 +21,11 @@
             </intent-filter>
         </activity>
 
+        <!-- AdMob: ID do app Tessel Block (anúncios premiado e intersticial, ver src/ads.js) -->
+        <meta-data
+            android:name="com.google.android.gms.ads.APPLICATION_ID"
+            android:value="ca-app-pub-3887694594348421~6820023709" />
+
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.fileprovider"
@@ -30,5 +35,6 @@
         </provider>
     </application>
 
-    <!-- Sem INTERNET: o jogo roda 100% offline. A única permissão é VIBRATE, adicionada pelo plugin de vibração. -->
+    <!-- Permissões vêm dos plugins: VIBRATE (vibração) e INTERNET, ACCESS_NETWORK_STATE e AD_ID (anúncios do AdMob).
+         O jogo funciona offline; sem internet só não aparecem anúncios. -->
 </manifest>

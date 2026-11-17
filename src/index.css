@@ -738,6 +738,14 @@ body,
   box-shadow: inset 0 -3px 0 rgba(0, 0, 0, .2), 0 8px 20px -10px #16a34a;
 }
 .stuck-btn:active { transform: translateY(2px); }
+.stuck-btn-ad {
+  display: flex; align-items: center; gap: 5px; white-space: nowrap;
+  padding: 8px 14px; border-radius: 999px; font-size: 14px; font-weight: 900; color: #422006;
+  background: linear-gradient(180deg, #fde047, #f59e0b);
+  box-shadow: inset 0 -3px 0 rgba(0, 0, 0, .2), 0 8px 20px -10px #f59e0b;
+}
+.stuck-btn-ad:active { transform: translateY(2px); }
+.stuck-btn-ad:disabled { opacity: .6; }
 .stuck-btn-secondary {
   display: grid; place-items: center; width: 38px; border-radius: 999px; color: var(--text);
   background: rgba(255, 255, 255, .08);
