@@ -126,6 +126,16 @@ Contas de desenvolvedor **pessoais** criadas depois de novembro de 2023 só libe
 7. Passados os 14 dias com 12+ testadores, aparece **Solicitar acesso à produção** no Painel. Responda o questionário (modelos em `docs/play-console-respostas.md`) — a análise leva até ~7 dias.
 8. Com o acesso liberado: **Produção → Criar nova versão**, envie o `.aab` (ou promova a versão do teste) e **Iniciar lançamento**.
 
+## 8. Anúncios (AdMob) depois de publicar
+
+O app já tem os anúncios ligados (`src/ads.js`). Até o app estar na Play Store, o AdMob mostra poucos anúncios ("publicação de anúncios limitada"). Depois que o app aparecer na loja (mesmo só no teste fechado):
+
+1. **AdMob → Apps → Tessel Block → Adicionar loja**: associe ao app da Google Play (`com.xprogramers.tesselblock`). O Google revisa em alguns dias.
+2. **AdMob → Privacidade e mensagens → RGPD**: crie e publique a mensagem de consentimento para a Europa/Reino Unido (o app já chama o formulário; sem mensagem publicada, ele não aparece e os anúncios lá ficam limitados).
+3. **app-ads.txt** (recomendado): o AdMob mostra a linha certa em **Apps → Configure o app-ads.txt**. Ela precisa ficar na raiz do site de desenvolvedor informado na Play Store.
+
+Para testar no seu celular use `npm run android:sync:test-ads` (anúncios de teste). **Nunca toque em anúncios reais no seu próprio aparelho.**
+
 ## Resumo dos comandos
 
 | Comando | O que faz |

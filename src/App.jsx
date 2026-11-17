@@ -1,6 +1,6 @@
 import { flushSync } from 'react-dom';
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { ChevronLeft, Coins, Flame, Map as MapIcon, RotateCcw, Star, Store, Volume2, VolumeX } from 'lucide-react';
+import { ChevronLeft, Coins, Flame, Map as MapIcon, PlayCircle, RotateCcw, Star, Store, Volume2, VolumeX } from 'lucide-react';
 import Board from './components/Board';
 import PieceTray from './components/PieceTray';
 import FloatingMoney from './components/FloatingMoney';
@@ -16,6 +16,9 @@ import { praiseFor } from './game/praise';
 import { LEVEL_COUNT, levelBoard, levelConfig, levelReward, starsFor } from './game/adventure';
 import { sound } from './audio/soundEngine';
 import { haptic, onAppPause, onBackButton, setSystemBarsForTheme } from './native';
+import {
+  initAds, maybeShowInterstitial, noteGameEnded, onRewardReady, setAdsMuted, showRewarded,
+} from './ads';
 import {
   anyFit, canPlace, clearLines, emptyGrid, findFullLines, generateSet, isBoardEmpty, placePiece, SIZE,
 } from './game/logic';
@@ -50,6 +53,10 @@ export default function App() {
   const [missCount, setMissCount] = useState(resumed?.missCount ?? 0);
   const [gameOver, setGameOver] = useState(false);
   const [isRecord, setIsRecord] = useState(false);
+  // Anúncio premiado: vídeo opcional no fim da partida que dobra as moedas ganhas nela
+  const [rewardReady, setRewardReady] = useState(false);
+  const [doubled, setDoubled] = useState(false);
+  const [watchingAd, setWatchingAd] = useState(false);
   const [shopOpen, setShopOpen] = useState(false);
   const [drag, setDrag] = useState(null);
   // Prévia do encaixe fica num "store" próprio: atualizá-la durante o arraste re-renderiza
@@ -96,6 +103,13 @@ export default function App() {
   }, [balance, owned, themeId, best, ownedSounds, soundId, advStars]);
 
   useEffect(() => sound.setPlacePack(soundId), [soundId]);
+
+  // Anúncios (só no Android): consentimento, SDK e o vídeo premiado pré-carregado
+  useEffect(() => {
+    initAds();
+    return onRewardReady(setRewardReady);
+  }, []);
+  useEffect(() => setAdsMuted(muted), [muted]);
 
   // Partida em andamento: salva a cada jogada; terminada, apaga (a próxima abertura começa do zero).
   // Durante um nível da Aventura a partida clássica salva fica intacta.
@@ -291,6 +305,7 @@ export default function App() {
         clearTimeout(gameOverTimer.current);
         gameOverTimer.current = setTimeout(() => {
           setLevelResult({ n: level, won: false, stars: 0, points, target: levelConfig(level).target, reward: 0 });
+          noteGameEnded();
           sound.gameOver();
           haptic('heavy');
         }, 750);
@@ -306,6 +321,7 @@ export default function App() {
         setIsRecord(finalScore > best);
         setBest((b) => Math.max(b, finalScore));
         setGameOver(true);
+        noteGameEnded();
         sound.gameOver();
         haptic('heavy');
       }, 750);
@@ -332,6 +348,7 @@ export default function App() {
     clearTimeout(gameOverTimer.current);
     gameOverTimer.current = setTimeout(() => {
       setLevelResult({ n, won: true, stars, points, target: levelConfig(n).target, reward, last: n === LEVEL_COUNT });
+      noteGameEnded();
       sound.levelWin(stars);
       haptic('heavy');
       particlesRef.current?.burst(window.innerWidth / 2, window.innerHeight * 0.4, theme.particles, 70, 1.5);
@@ -488,6 +505,7 @@ export default function App() {
 
   /* ---------------- Ações ---------------- */
   const restart = () => {
+    if (state.current.gameOver) maybeShowInterstitial();
     // Cancela um "game over" agendado da partida anterior (senão a nova partida terminaria sozinha)
     clearTimeout(gameOverTimer.current);
     if (dragData.current) onUp({ pointerId: dragData.current.id, type: 'pointercancel' });
@@ -501,6 +519,7 @@ export default function App() {
     setMissCount(0);
     setGameOver(false);
     setIsRecord(false);
+    setDoubled(false);
     setClearFx([]);
     sound.unlock();
     sound.newSet();
@@ -508,6 +527,7 @@ export default function App() {
 
   /* ---------------- Modo Aventura ---------------- */
   const startLevel = (n) => {
+    if (levelDone.current) maybeShowInterstitial();
     clearTimeout(gameOverTimer.current);
     if (dragData.current) onUp({ pointerId: dragData.current.id, type: 'pointercancel' });
     const s = state.current;
@@ -624,6 +644,25 @@ export default function App() {
     if (!ownedSounds.includes(id)) return;
     setSoundId(id);
     sound.previewPlace(id);
+  };
+
+  /** Vídeo premiado: dobra as moedas ganhas na partida clássica que acabou de terminar. */
+  const watchToDouble = async () => {
+    if (watchingAd || doubled) return;
+    const coins = state.current.score;
+    setWatchingAd(true);
+    sound.suspend();
+    const earned = await showRewarded();
+    setWatchingAd(false);
+    if (!earned || coins <= 0) return;
+    setDoubled(true);
+    setBalance((b) => b + coins);
+    setSessionTotal((s) => s + coins);
+    sound.unlock();
+    sound.purchase();
+    haptic('medium');
+    addFloats([{ x: window.innerWidth / 2, y: window.innerHeight * 0.45, text: `+${fmt(coins)}`, coin: true, variant: 'gold' }]);
+    particlesRef.current?.burst(window.innerWidth / 2, window.innerHeight * 0.45, theme.particles, 60, 1.4);
   };
 
   const toggleMute = () => {
@@ -788,6 +827,11 @@ export default function App() {
               : isRecord && score > 0 ? '✨ novo recorde!' : `recorde ${fmt(Math.max(best, score))}`}
           </span>
           <div className="stuck-actions">
+            {!level && rewardReady && !doubled && score > 0 && (
+              <button type="button" className="stuck-btn-ad" onClick={watchToDouble} disabled={watchingAd}>
+                <PlayCircle size={15} /> +{fmt(score)}
+              </button>
+            )}
             {level && (
               <button type="button" className="stuck-btn-secondary" onClick={openMap} aria-label="Mapa">
                 <MapIcon size={16} />
