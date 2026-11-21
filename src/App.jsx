@@ -17,6 +17,7 @@ import { LEVEL_COUNT, levelBoard, levelConfig, levelReward, starsFor } from './g
 import { sound } from './audio/soundEngine';
 import { haptic, onAppPause, onBackButton, setSystemBarsForTheme } from './native';
 import { gameplayStart, gameplayStop, initPlatform } from './platform';
+import { t } from './i18n';
 import {
   initAds, maybeShowInterstitial, noteGameEnded, onRewardReady, setAdsMuted, showRewarded,
 } from './ads';
@@ -267,8 +268,8 @@ export default function App() {
       const cy = sy / cleared.size;
       fl.push({ x: cx, y: cy, text: `+${fmt(lineGain)}`, coin: true, suffix: '🔥', variant: 'gold', delay: 70 });
       const labels = [];
-      if (lines >= 2) labels.push(`Combo ${lines}x`);
-      if (newStreak >= 2) labels.push(`Streak ${newStreak}`);
+      if (lines >= 2) labels.push(t('combo', { n: lines }));
+      if (newStreak >= 2) labels.push(t('streak', { n: newStreak }));
       if (labels.length) fl.push({ x: cx, y: cy - cs * 1.1, text: labels.join(' · '), variant: 'label', delay: 140 });
       // Elogio grande no meio do tabuleiro: cresce junto com o combo
       const praise = praiseFor(lines, newStreak, allClear);
@@ -697,7 +698,7 @@ export default function App() {
             type="button"
             onClick={() => { sound.unlock(); setScreen(level ? 'map' : 'menu'); }}
             className="panel grid h-11 w-11 shrink-0 place-items-center rounded-xl transition hover:brightness-125 active:scale-95"
-            aria-label={level ? 'Voltar ao mapa' : 'Voltar ao menu'}
+            aria-label={level ? t('backToMap') : t('backToMenu')}
           >
             <ChevronLeft size={22} />
           </button>
@@ -707,7 +708,7 @@ export default function App() {
             </div>
             <div className="min-w-0 leading-none">
               <div className="mb-1 text-[10px] font-semibold tracking-[.16em] uppercase" style={{ color: 'var(--muted)' }}>
-                Moedas
+                {t('coins')}
               </div>
               <RollingCounter value={balance} className="money-text text-[22px] font-black tracking-tight sm:text-2xl" />
             </div>
@@ -716,17 +717,17 @@ export default function App() {
             <button
               onClick={toggleMute}
               className="panel grid h-11 w-11 place-items-center rounded-xl transition hover:brightness-125 active:scale-95"
-              aria-label={muted ? 'Ativar som' : 'Silenciar'}
+              aria-label={muted ? t('soundOn') : t('soundOff')}
             >
               {muted ? <VolumeX size={19} /> : <Volume2 size={19} />}
             </button>
             <button
               onClick={() => { sound.unlock(); setShopOpen(true); }}
-              aria-label="Loja"
+              aria-label={t('shop')}
               className="panel flex h-11 items-center gap-1.5 rounded-xl px-3 text-sm font-bold transition hover:brightness-125 active:scale-95"
             >
               <Store size={18} style={{ color: 'var(--accent)' }} />
-              <span className="hidden min-[400px]:inline">Loja / Níveis</span>
+              <span className="hidden min-[400px]:inline">{t('shopButton')}</span>
             </button>
           </div>
         </header>
@@ -738,8 +739,8 @@ export default function App() {
             {level ? (
               <>
                 <div className="score-sub mb-1.5 flex items-center gap-2">
-                  <span>Nível {level}{levelConfig(level).boss ? ' · Chefão' : ''}</span>
-                  <span className="flex items-center" title="Estrelas se você bater a meta na próxima jogada">
+                  <span>{t('level', { n: level })}{levelConfig(level).boss ? ` · ${t('boss')}` : ''}</span>
+                  <span className="flex items-center" title={t('starsHint')}>
                     {[1, 2, 3].map((i) => (
                       <Star
                         key={i}
@@ -765,7 +766,7 @@ export default function App() {
             ) : (
               <>
                 <RollingCounter value={score} duration={500} className="score-big tabular" />
-                <div className="score-sub mt-1">Recorde {fmt(Math.max(best, score))}</div>
+                <div className="score-sub mt-1">{t('best', { score: fmt(Math.max(best, score)) })}</div>
               </>
             )}
             <div className="absolute top-0 right-0 flex items-center gap-1.5">
@@ -774,7 +775,7 @@ export default function App() {
                   key={streak}
                   className="streak-chip flex items-center gap-1 rounded-full bg-orange-500/20 px-2 py-0.5 text-xs font-extrabold"
                   style={{ color: 'var(--streak, #fdba74)' }}
-                  title="Sequência de jogadas limpando linhas"
+                  title={t('streakHint')}
                 >
                   <Flame size={13} /> {streak}
                 </span>
@@ -785,18 +786,18 @@ export default function App() {
                   confirmRestart ? 'bg-rose-500/90 px-2.5 text-xs font-bold text-white' : 'w-7 hover:bg-white/10'
                 }`}
                 style={confirmRestart ? undefined : { color: 'var(--muted)' }}
-                aria-label="Reiniciar partida"
-                title="Reiniciar partida"
+                aria-label={t('restart')}
+                title={t('restart')}
               >
                 <RotateCcw size={confirmRestart ? 13 : 15} />
-                {confirmRestart && 'Reiniciar?'}
+                {confirmRestart && t('restartConfirm')}
               </button>
             </div>
             {!level && (
               <span
                 className="absolute top-0 left-0 rounded-full px-2 py-0.5 text-xs font-extrabold"
                 style={{ background: 'color-mix(in srgb, var(--accent) 18%, transparent)', color: 'var(--accent)' }}
-                title={`${theme.name}: moedas ${theme.mult}x`}
+                title={t('themeMult', { theme: t(`theme.${theme.id}.name`), mult: theme.mult })}
               >
                 {theme.mult}x
               </span>
@@ -816,7 +817,7 @@ export default function App() {
         </main>
 
         <footer className="safe-bottom px-4 text-center text-[10.5px] opacity-70" style={{ color: 'var(--muted)', visibility: stuck ? 'hidden' : undefined }}>
-          Jogo recreativo — moedas virtuais sem valor monetário.
+          {t('disclaimer')}
         </footer>
       </div>
 
@@ -836,10 +837,10 @@ export default function App() {
       {stuck && screen === 'game' && !shopOpen && (
         <div className="stuck-bar">
           <span className="stuck-note">
-            Sem espaço ·{' '}
+            {t('noSpace')} ·{' '}
             {level
-              ? `${fmt(levelResult.points)} de ${fmt(levelResult.target)} pontos`
-              : isRecord && score > 0 ? '✨ novo recorde!' : `recorde ${fmt(Math.max(best, score))}`}
+              ? t('pointsOf', { points: fmt(levelResult.points), target: fmt(levelResult.target) })
+              : isRecord && score > 0 ? t('newBest') : t('bestLower', { score: fmt(Math.max(best, score)) })}
           </span>
           <div className="stuck-actions">
             {!level && rewardReady && !doubled && score > 0 && (
@@ -848,12 +849,12 @@ export default function App() {
               </button>
             )}
             {level && (
-              <button type="button" className="stuck-btn-secondary" onClick={openMap} aria-label="Mapa">
+              <button type="button" className="stuck-btn-secondary" onClick={openMap} aria-label={t('map')}>
                 <MapIcon size={16} />
               </button>
             )}
             <button type="button" className="stuck-btn" onClick={level ? () => startLevel(level) : restart}>
-              <RotateCcw size={15} /> Tentar de novo
+              <RotateCcw size={15} /> {t('tryAgain')}
             </button>
           </div>
         </div>

@@ -1,5 +1,6 @@
 import { memo } from 'react';
 import { PieceShape } from './Block';
+import { t } from '../i18n';
 
 /** Bandeja com as 3 peças disponíveis. */
 function PieceTray({ pieces, fits, theme, draggingIndex, onPointerDown, stuck = false }) {
@@ -18,7 +19,7 @@ function PieceTray({ pieces, fits, theme, draggingIndex, onPointerDown, stuck = 
                   .join(' ')}
                 onPointerDown={(e) => onPointerDown(i, e)}
                 role="button"
-                aria-label="Peça disponível"
+                aria-label={t('availablePiece')}
               >
                 <PieceShape piece={piece} palette={theme.palette} variant={theme.block} size="var(--tcell)" />
               </div>

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { ChevronLeft, Play, Star } from 'lucide-react';
 import TesselGem from './TesselGem';
+import { t } from '../i18n';
 import { chapterOf, isBoss, isUnlocked, LEVEL_COUNT, nextLevel } from '../game/adventure';
 
 /*
@@ -47,10 +48,10 @@ export default function AdventureMap({ open, stars, onClose, onPlay }) {
   return (
     <div className="adv-map fade-in fixed inset-0 z-[78] flex flex-col">
       <header className="safe-top adv-map-header flex items-center gap-3 px-4 pb-2">
-        <button type="button" onClick={onClose} className="adv-icon-btn" aria-label="Voltar ao menu">
+        <button type="button" onClick={onClose} className="adv-icon-btn" aria-label={t('backToMenu')}>
           <ChevronLeft size={22} />
         </button>
-        <h2 className="flex-1 text-xl font-black tracking-tight">Aventura</h2>
+        <h2 className="flex-1 text-xl font-black tracking-tight">{t('adventure')}</h2>
         <div className="adv-total flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-extrabold">
           <Star size={15} className="adv-star-on" fill="currentColor" /> {total}/{LEVEL_COUNT * 3}
         </div>
@@ -59,8 +60,8 @@ export default function AdventureMap({ open, stars, onClose, onPlay }) {
       <div className="scroll-thin flex flex-1 flex-col items-center overflow-y-auto px-4 pb-24" style={{ touchAction: 'pan-y' }}>
         <TesselGem stars={stars} />
         <p className="adv-caption">
-          {done === LEVEL_COUNT ? 'Joia conquistada!' : `Vença os ${LEVEL_COUNT} níveis para conquistar a joia`}
-          <span>{done}/{LEVEL_COUNT} níveis</span>
+          {done === LEVEL_COUNT ? t('gemDone') : t('gemGoal', { n: LEVEL_COUNT })}
+          <span>{t('levelsDone', { done, n: LEVEL_COUNT })}</span>
         </p>
 
         <div
@@ -87,7 +88,7 @@ export default function AdventureMap({ open, stars, onClose, onPlay }) {
                 disabled={!unlocked}
                 onClick={() => setSelected(n)}
                 onDoubleClick={() => onPlay(n)}
-                aria-label={`Nível ${n}${s ? `, ${s} estrelas` : unlocked ? '' : ', bloqueado'}`}
+                aria-label={t('tileLabel', { n }) + (s ? t('tileStars', { s }) : unlocked ? '' : t('tileLocked'))}
               >
                 {isBoss(n) && <i className="tile-boss" />}
                 <span className="tile-num">{n}</span>
@@ -106,9 +107,9 @@ export default function AdventureMap({ open, stars, onClose, onPlay }) {
       {selected != null && (
         <div className="safe-bottom adv-cta-wrap px-5 pt-3">
           <button type="button" className="adv-cta adv-cta-in" onClick={() => onPlay(selected)}>
-            <Play size={18} fill="currentColor" /> Jogar nível {selected}
-            {isBoss(selected) && <span className="adv-cta-replay">chefão</span>}
-            {stars[selected - 1] > 0 && <span className="adv-cta-replay">de novo</span>}
+            <Play size={18} fill="currentColor" /> {t('playLevel', { n: selected })}
+            {isBoss(selected) && <span className="adv-cta-replay">{t('bossTag')}</span>}
+            {stars[selected - 1] > 0 && <span className="adv-cta-replay">{t('againTag')}</span>}
           </button>
         </div>
       )}

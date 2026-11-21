@@ -1,10 +1,16 @@
+import { numberLocale, t } from '../i18n.js';
+
 // Moeda do jogo: moedas de ouro virtuais (sem valor monetário), sempre inteiras.
-const NUM = new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 0 });
+// Separador de milhar conforme o idioma: "1.500" em português, "1,500" em inglês.
+const formatters = {};
+export const fmt = (v) => {
+  const loc = numberLocale();
+  formatters[loc] ??= new Intl.NumberFormat(loc, { maximumFractionDigits: 0 });
+  return formatters[loc].format(Math.round(v));
+};
 
-export const fmt = (v) => NUM.format(Math.round(v));
-
-/** "1.500 moedas" — para textos corridos. */
-export const coins = (v) => `${fmt(v)} ${Math.round(v) === 1 ? 'moeda' : 'moedas'}`;
+/** "1.500 moedas" / "1,500 coins" — para textos corridos. */
+export const coins = (v) => t(Math.round(v) === 1 ? 'coinCountOne' : 'coinCount', { n: fmt(v) });
 
 export function load(key, fallback) {
   try {

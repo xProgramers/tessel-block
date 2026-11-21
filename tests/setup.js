@@ -1,5 +1,6 @@
 // localStorage em memória para os testes (o Node não tem um por padrão).
 import { beforeEach } from 'vitest';
+import { setLang } from '../src/i18n';
 
 class MemoryStorage {
   #m = new Map();
@@ -12,4 +13,7 @@ class MemoryStorage {
 }
 
 globalThis.localStorage = new MemoryStorage();
-beforeEach(() => localStorage.clear());
+beforeEach(() => {
+  localStorage.clear();
+  setLang('pt'); // os testes existentes conferem os textos em português
+});

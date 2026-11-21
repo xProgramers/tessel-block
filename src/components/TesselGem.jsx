@@ -1,4 +1,5 @@
 import { CHAPTERS, LEVELS_PER_CHAPTER } from '../game/adventure';
+import { t } from '../i18n';
 
 /*
  * Joia Tessel: diamante lapidado em 10 facetas, uma por capítulo da Aventura.
@@ -33,7 +34,7 @@ export default function TesselGem({ stars, size = 132 }) {
 
   return (
     <div className={`gem ${complete ? 'is-complete' : ''}`} style={{ width: size }}>
-      <svg viewBox="0 0 200 176" aria-label={complete ? 'Joia Tessel conquistada' : `Joia Tessel: ${lit} de 10 facetas`}>
+      <svg viewBox="0 0 200 176" aria-label={complete ? t('gemAria') : t('gemAriaProgress', { lit })}>
         <defs>
           <linearGradient id="gem-shine" x1="0" y1="0" x2="1" y2="1">
             <stop offset="0" stopColor="#fff" stopOpacity=".55" />

@@ -2,6 +2,7 @@ import { Map as MapIcon, Play, Star, Store, Trophy, Volume2, VolumeX } from 'luc
 import { LEVEL_COUNT, nextLevel } from '../game/adventure';
 import { fmt } from '../game/format';
 import Coin from './Coin';
+import { t } from '../i18n';
 
 /** Logotipo: um mini "tessel" de blocos com as cores do tema. */
 function Logo({ palette }) {
@@ -37,7 +38,7 @@ export default function HomeMenu({
         <div className="home-chip">
           <Coin size="1.05em" /> <span className="money-text">{fmt(balance)}</span>
         </div>
-        <button type="button" onClick={onToggleMute} className="home-icon-btn" aria-label={muted ? 'Ativar som' : 'Silenciar'}>
+        <button type="button" onClick={onToggleMute} className="home-icon-btn" aria-label={muted ? t('soundOn') : t('soundOff')}>
           {muted ? <VolumeX size={19} /> : <Volume2 size={19} />}
         </button>
       </div>
@@ -49,12 +50,12 @@ export default function HomeMenu({
           <button type="button" className="home-mode home-mode-classic" onClick={onClassic}>
             <span className="home-mode-icon"><Play size={24} fill="currentColor" /></span>
             <span className="min-w-0 flex-1 text-left">
-              <span className="home-mode-title">Clássico</span>
+              <span className="home-mode-title">{t('classic')}</span>
               <span className="home-mode-sub">
                 {classicScore > 0 ? (
-                  <>Continuar partida · {fmt(classicScore)}</>
+                  <>{t('continueGame', { score: fmt(classicScore) })}</>
                 ) : (
-                  <><Trophy size={12} /> Recorde {fmt(best)}</>
+                  <><Trophy size={12} /> {t('best', { score: fmt(best) })}</>
                 )}
               </span>
             </span>
@@ -63,22 +64,22 @@ export default function HomeMenu({
           <button type="button" className="home-mode home-mode-adventure" onClick={onAdventure}>
             <span className="home-mode-icon"><MapIcon size={24} /></span>
             <span className="min-w-0 flex-1 text-left">
-              <span className="home-mode-title">Aventura</span>
+              <span className="home-mode-title">{t('adventure')}</span>
               <span className="home-mode-sub">
-                {next ? `Nível ${next}` : 'Completa!'} · <Star size={12} fill="currentColor" /> {stars}/{LEVEL_COUNT * 3}
+                {next ? t('level', { n: next }) : t('adventureDone')} · <Star size={12} fill="currentColor" /> {stars}/{LEVEL_COUNT * 3}
               </span>
               <span className="home-mode-bar"><span style={{ width: `${(done / LEVEL_COUNT) * 100}%` }} /></span>
             </span>
           </button>
 
           <button type="button" className="home-shop" onClick={onShop}>
-            <Store size={17} /> Loja / Níveis
+            <Store size={17} /> {t('shopButton')}
           </button>
         </div>
       </div>
 
       <p className="safe-bottom px-4 pb-3 text-center text-[10.5px] opacity-60">
-        Jogo recreativo — moedas virtuais sem valor monetário.
+        {t('disclaimer')}
       </p>
     </div>
   );
