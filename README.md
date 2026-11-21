@@ -40,12 +40,23 @@ npm run icons          # recria ícone, tela de abertura e artes da loja
 
 Passo a passo completo de publicação: [docs/PUBLICAR-PLAY-STORE.md](docs/PUBLICAR-PLAY-STORE.md). Política de privacidade: [docs/politica-de-privacidade.md](docs/politica-de-privacidade.md). Textos, ícone, imagem de destaque e capturas da loja em `store/` ([store/LISTING.md](store/LISTING.md)). O workflow **Android bundle** do GitHub Actions também gera o `.aab`.
 
+## Portais web (CrazyGames)
+
+```bash
+npm run build:crazygames
+```
+
+Gera `tessel-block-crazygames.zip` (index.html na raiz, caminhos relativos, ~540 KB) pronto para enviar no [portal de desenvolvedores da CrazyGames](https://developer.crazygames.com). Esse build inclui o [SDK v3](https://docs.crazygames.com/sdk/intro/): avisa início/pausa de partida (loja e fim de jogo pausam) e respeita o "mudo" do site. Fora da CrazyGames o SDK fica inativo e o jogo funciona normalmente.
+
+Testar localmente como no site: `npx vite preview --outDir dist-crazygames` e abrir com `?useLocalSdk=true`.
+
 ## Estrutura
 
 ```
 src/
   App.jsx                 estado do jogo, arrastar e soltar, pontuação
   native.js               integração Android: vibração, botão voltar, barra de status
+  platform.js             integração com portais web (SDK da CrazyGames)
   components/             Board, PieceTray, FloatingMoney, ShopModal, GameOverModal, ParticleCanvas…
   audio/soundEngine.js    efeitos sonoros sintetizados e pacotes de som de encaixe
   game/

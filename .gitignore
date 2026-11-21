@@ -20,3 +20,7 @@ android/keystore.properties
 # Builds Android assinados
 android/app/release/
 android/app/debug/
+
+# Pacotes para portais web
+dist-crazygames/
+*.zip

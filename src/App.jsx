@@ -16,6 +16,7 @@ import { praiseFor } from './game/praise';
 import { LEVEL_COUNT, levelBoard, levelConfig, levelReward, starsFor } from './game/adventure';
 import { sound } from './audio/soundEngine';
 import { haptic, onAppPause, onBackButton, setSystemBarsForTheme } from './native';
+import { gameplayStart, gameplayStop, initPlatform } from './platform';
 import {
   initAds, maybeShowInterstitial, noteGameEnded, onRewardReady, setAdsMuted, showRewarded,
 } from './ads';
@@ -149,10 +150,24 @@ export default function App() {
     return () => window.removeEventListener('storage', onStorage);
   }, []);
 
+  // Portal web (CrazyGames): o "mudo" da plataforma tem prioridade sobre o do jogo
+  const [platformMuted, setPlatformMuted] = useState(false);
+  const [platformReady, setPlatformReady] = useState(false);
+  useEffect(() => {
+    initPlatform({ onMuteChange: setPlatformMuted }).then(setPlatformReady);
+  }, []);
+
   useEffect(() => {
     save('bc_muted', muted);
-    sound.setMuted(muted);
-  }, [muted]);
+    sound.setMuted(muted || platformMuted);
+  }, [muted, platformMuted]);
+
+  // Informa ao portal quando o jogador está jogando ou fora da partida (menu, mapa, loja, fim de partida)
+  useEffect(() => {
+    if (!platformReady) return;
+    if (screen === 'game' && !gameOver && !shopOpen) gameplayStart();
+    else gameplayStop();
+  }, [platformReady, screen, gameOver, shopOpen]);
 
   useEffect(() => {
     document.querySelector('meta[name="theme-color"]')?.setAttribute('content', theme.vars['--panel']);

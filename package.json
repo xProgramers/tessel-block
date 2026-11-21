@@ -14,7 +14,8 @@
     "android:sync": "vite build && cap sync android",
     "android:bundle": "node scripts/android-bundle.mjs",
     "test": "vitest run",
-    "android:sync:test-ads": "VITE_ADS_TEST=1 vite build && cap sync android"
+    "android:sync:test-ads": "VITE_ADS_TEST=1 vite build && cap sync android",
+    "build:crazygames": "node scripts/build-crazygames.mjs"
   },
   "dependencies": {
     "@capacitor-community/admob": "8.3.0",
